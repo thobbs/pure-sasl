@@ -70,12 +70,12 @@ Please ask in the user forums for help.
 
 
 setup(
-    name='PureSASL',
+    name='pure-sasl',
     version=puresasl.__version__,
     author='Tyler Hobbs',
     author_email='tylerlhobbs@gmail.com',
     description='Pure Python client SASL implementation',
-    url='http://github.com/thobbs/puresasl',
+    url='http://github.com/thobbs/pure-sasl',
     keywords='sasl',
     packages=['puresasl'],
     cmdclass={"doc": doc},

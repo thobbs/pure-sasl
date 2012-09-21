@@ -16,22 +16,37 @@ except ImportError:
 
 
 class Mechanism(object):
+    """
+    The base class for all mechanisms.
+    """
 
     name = None
+    """ The IANA registered name for the mechanism. """
+
     score = 0
+    """ A relative security score where higher scores correspond
+    to more secure mechanisms. """
+
+    complete = False
+    """ Set to True when SASL negotiation has completed succesfully. """
 
     has_initial_response = False
+
     allows_anonymous = True
+    """ True if the mechanism allows for anonymous logins. """
+
     uses_plaintext = True
+    """ True if the mechanism transmits sensitive information in plaintext. """
+
     active_safe = False
+    """ True if the mechanism is safe against active attacks. """
+
     dictionary_safe = False
+    """ True if the mechanism is safe against passive dictionary attacks. """
 
     def __init__(self, sasl):
         self.sasl = sasl
         self.complete = False
-
-    def okay(self):
-        return self.complete
 
     def process(self, challenge=None):
         """
@@ -43,16 +58,33 @@ class Mechanism(object):
         raise NotImplementedError()
 
     def wrap(self, outgoing):
+        """
+        Wrap an outgoing message intended for the SASL server. Depending
+        on the negotiated quality of protection, this may result in the
+        message being signed, encrypted, or left unaltered.
+        """
         raise NotImplementedError()
 
     def unwrap(self, incoming):
+        """
+        Unwrap a message from the SASL server. Depending on the negotiated
+        quality of protection, this may check a signature, decrypt the message,
+        or leave the message unaltered.
+        """
         raise NotImplementedError()
 
     def dispose(self):
-        """ Clear all sensitive data """
+        """
+        Clear all sensitive data, such as passwords.
+        """
         pass
 
     def _fetch_properties(self, *properties):
+        """
+        Ensure this mechanism has the needed properties. If they haven't
+        been set yet, the registered callback function will be called for
+        each property to retrieve a value.
+        """
         needed = [p for p in properties if getattr(self, p, None) is None]
         if needed and not self.sasl.callback:
             raise SASLError('The following properties are required, but a '
@@ -62,6 +94,10 @@ class Mechanism(object):
             setattr(self, prop, self.sasl.callback(prop))
 
     def _pick_qop(self, server_offered_qops):
+        """
+        Choose a quality of protection based on the user's requirements and
+        what the server supports.
+        """
         available_qops = set(self.sasl.qops) & set(server_offered_qops)
         if not available_qops:
             raise SASLProtocolException("Your requested quality of "
@@ -77,6 +113,9 @@ class Mechanism(object):
 
 
 class AnonymousMechanism(Mechanism):
+    """
+    An anonymous user login mechanism.
+    """
     name = 'ANONYMOUS'
     score = 0
 
@@ -88,14 +127,15 @@ class AnonymousMechanism(Mechanism):
 
 
 class PlainMechanism(Mechanism):
+    """
+    A plaintext user/password based mechanism.
+    """
     name = 'PLAIN'
     score = 1
 
     allows_anonymous = False
 
     def __init__(self, sasl, username=None, password=None, **props):
-        """
-        """
         Mechanism.__init__(self, sasl)
         self.username = username
         self.password = password
@@ -265,8 +305,6 @@ class DigestMD5Mechanism(Mechanism):
         return b','.join([bytes(k) + b'=' + bytes(v) for k, v in resp.items()])
 
     def parse_challenge(self, challenge):
-        """
-        """
         ret = {}
         var = b''
         val = b''
@@ -381,7 +419,8 @@ class DigestMD5Mechanism(Mechanism):
 
             return self.response()
 
-    def okay(self):
+    @property
+    def complete(self):
         """
         """
         if not self.sasl.mutual_auth:
@@ -405,7 +444,6 @@ class GSSAPIMechanism(Mechanism):
     def __init__(self, sasl, **props):
         Mechanism.__init__(self, sasl)
         self.user = None
-        self.complete = False
         self._have_negotiated_details = False
         _, self.context = kerberos.authGSSClientInit(self.sasl.service)
 
@@ -470,9 +508,6 @@ class GSSAPIMechanism(Mechanism):
             return base64.b64decode(kerberos.authGSSClientResponse, self.context)
         else:
             return incoming
-
-    def okay(self):
-        return self.complete
 
     def dispose(self):
         kerberos.authGSSClientClean(self.context)
