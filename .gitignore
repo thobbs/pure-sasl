@@ -1,1 +1,6 @@
 *.pyc
+*.swp
+*.swo
+build/
+dist/
+pure_sasl.egg-info/
