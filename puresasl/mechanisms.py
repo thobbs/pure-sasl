@@ -46,7 +46,6 @@ class Mechanism(object):
 
     def __init__(self, sasl):
         self.sasl = sasl
-        self.complete = False
 
     def process(self, challenge=None):
         """
