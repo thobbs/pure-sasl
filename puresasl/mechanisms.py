@@ -187,6 +187,7 @@ class DigestMD5Mechanism(Mechanism):
     def __init__(self, sasl, username=None, password=None, **props):
         Mechanism.__init__(self, sasl)
         self.username = username
+        self.password = password
 
         self.qops = self.sasl.qops
         self.qop = b'auth'
