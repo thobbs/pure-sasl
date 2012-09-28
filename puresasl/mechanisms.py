@@ -292,9 +292,7 @@ class DigestMD5Mechanism(Mechanism):
         self.nc += 1
         resp['nc'] = bytes('%08x' % self.nc)
 
-        service = bytes(self.sasl.service)
-        host = bytes(self.sasl.host)
-        self._digest_uri = service + b'/' + host
+        self._digest_uri = bytes(self.sasl.host) + b'/' + bytes(self.sasl.service)
         resp['digest-uri'] = quote(self._digest_uri)
 
         a2 = b'AUTHENTICATE:' + self._digest_uri
@@ -441,11 +439,18 @@ class GSSAPIMechanism(Mechanism):
     uses_plaintext = False
     active_safe = True
 
-    def __init__(self, sasl, **props):
+    def __init__(self, sasl, principal=None, **props):
         Mechanism.__init__(self, sasl)
         self.user = None
         self._have_negotiated_details = False
-        _, self.context = kerberos.authGSSClientInit(self.sasl.service)
+        self.host = self.sasl.host
+        self.service = self.sasl.service
+        self.principal = principal
+        self._fetch_properties('host', 'service')
+
+        krb_service = b'@'.join((bytes(self.service), bytes(self.host)))
+        _, self.context = kerberos.authGSSClientInit(
+                service=krb_service, principal=self.principal)
 
     def process(self, challenge=None):
         if not self._have_negotiated_details:
