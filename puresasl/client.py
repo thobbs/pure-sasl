@@ -69,7 +69,7 @@ class SASLClient(object):
         >>> conn.send_data(sasl.wrap(response))
     """
 
-    def __init__(self, host, service, mechanism=None, authorization_id=None,
+    def __init__(self, host, service=None, mechanism=None, authorization_id=None,
             callback=None, qops=(b'auth', b'auth-int', b'auth-conf'),
             mutual_auth=False, max_buffer=65536, **mechanism_props):
         """
