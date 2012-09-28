@@ -1,0 +1,18 @@
+Source: pure-sasl
+Section: python
+Priority: extra
+Maintainer: Tyler Hobbs <tylerLhobbs@gmail.com>
+Build-Depends: cdbs (>= 0.4.90~), debhelper (>= 8.0.0), python-all (>= 2.6.6-3~)
+Standards-Version: 3.9.2
+Homepage: http://github.com/thobbs/pure-sasl
+
+Package: python-pure-sasl
+Architecture: all
+Depends: ${python:Depends}, ${misc:Depends}, python-kerberos (>= 1.1.2)
+Provides: ${python:Provides}
+X-Python-Version: >= 2.6
+Description: Pure Python SASL client
+ This package provides a reasonably high-level SASL client written
+ in pure Python.  New mechanisms may be integrated easily, but by default,
+ support for PLAIN, ANONYMOUS, CRAM-MD5, DIGEST-MD5, and GSSAPI are
+ provided.
