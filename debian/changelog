@@ -1,3 +1,9 @@
+pure-sasl (0.1.2-1) unstable; urgency=low
+
+  * Use build number in package name
+
+ -- Tyler Hobbs <tyler@datastax.com>  Wed, 14 Nov 2012 14:07:22 -0600
+
 pure-sasl (0.1.2) unstable; urgency=low
 
   * Initial Release.
