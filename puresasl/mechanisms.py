@@ -516,7 +516,7 @@ class GSSAPIMechanism(Mechanism):
     def wrap(self, outgoing):
         if self.qop == 'auth-conf':
             outgoing = base64.b64encode(outgoing)
-            kerberos.authGSSClientWrap(self.context, outgoing, self.user)
+            kerberos.authGSSClientWrap(self.context, outgoing)
             return base64.b64decode(kerberos.authGSSClientResponse(self.context))
         else:
             return outgoing
