@@ -514,17 +514,24 @@ class GSSAPIMechanism(Mechanism):
         return base64.b64decode(response)
 
     def wrap(self, outgoing):
-        if self.qop == 'auth-conf':
+        if self.qop != 'auth':
             outgoing = base64.b64encode(outgoing)
-            kerberos.authGSSClientWrap(self.context, outgoing)
+            if self.qop == 'auth-conf':
+                protect = 1
+            else:
+                protect = 0
+            kerberos.authGSSClientWrap(self.context, outgoing, None, protect)
             return base64.b64decode(kerberos.authGSSClientResponse(self.context))
         else:
             return outgoing
 
     def unwrap(self, incoming):
-        if self.qop == 'auth-conf':
+        if self.qop != 'auth':
             incoming = base64.b64encode(incoming)
             kerberos.authGSSClientUnwrap(self.context, incoming)
+            conf = kerberos.authGSSClientResponseConf(self.context)
+            if 0 == conf and self.qop == 'auth-conf':
+                print "Warning confidentiality requested, but not honored by the server."
             return base64.b64decode(kerberos.authGSSClientResponse(self.context))
         else:
             return incoming
