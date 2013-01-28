@@ -494,6 +494,19 @@ class GSSAPIMechanism(Mechanism):
         max_length, = struct.unpack('!i', '\x00' + plaintext_data[1:])
         self.max_buffer = min(self.sasl.max_buffer, max_length)
 
+        """
+        Construct the reply.
+
+        byte 0: the selected qop. 1==auth, 2==auth-int, 4==auth-conf
+        byte 1-3: the max length for any buffer sent back and forth on
+            this connection. (big endian)
+        the rest of the buffer: the authorization user name in UTF-8 -
+            not null terminated.
+
+        So, we write the max length and authorization user name first, then
+        overwrite the first byte of the buffer with the qop.  This is ok since
+        the max length is writen out in big endian.
+        """
         i = len(self.user)
         fmt = '!I' + str(i) + 's'
         outdata = create_string_buffer(4 + i)
