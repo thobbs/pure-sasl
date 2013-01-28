@@ -531,7 +531,7 @@ class GSSAPIMechanism(Mechanism):
             kerberos.authGSSClientUnwrap(self.context, incoming)
             conf = kerberos.authGSSClientResponseConf(self.context)
             if 0 == conf and self.qop == 'auth-conf':
-                print "Warning confidentiality requested, but not honored by the server."
+                raise StandardError("Error: confidentiality requested, but not honored by the server.")
             return base64.b64decode(kerberos.authGSSClientResponse(self.context))
         else:
             return incoming
