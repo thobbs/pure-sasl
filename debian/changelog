@@ -1,3 +1,9 @@
+pure-sasl (0.1.3-1) unstable; urgency=low
+
+  * Add support for QoP selection, bugfixes
+
+ -- Tyler Hobbs <tyler@datastax.com>  Tue, 12 Feb 2013 10:38:05 -0600
+
 pure-sasl (0.1.2-1) unstable; urgency=low
 
   * Use build number in package name
