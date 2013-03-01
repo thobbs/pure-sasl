@@ -142,7 +142,7 @@ class PlainMechanism(Mechanism):
 
     def process(self, challenge=None):
         self._fetch_properties('username', 'password')
-        return b'\x00' + bytes(self.user) + b'\x00' + bytes(self.password)
+        return b'\x00' + bytes(self.username) + b'\x00' + bytes(self.password)
 
     def dispose(self):
         self.password = None
