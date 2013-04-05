@@ -474,7 +474,7 @@ class GSSAPIMechanism(Mechanism):
                     response = ''
             return response
 
-        ret = kerberos.authGSSClientUnwrap(self.context, challenge)
+        kerberos.authGSSClientUnwrap(self.context, challenge)
         data = kerberos.authGSSClientResponse(self.context)
         plaintext_data = base64.b64decode(data)
         if len(plaintext_data) != 4:
@@ -521,7 +521,7 @@ class GSSAPIMechanism(Mechanism):
 
         encodeddata = base64.b64encode(outdata)
 
-        ret = kerberos.authGSSClientWrap(self.context, encodeddata)
+        kerberos.authGSSClientWrap(self.context, encodeddata)
         response = kerberos.authGSSClientResponse(self.context)
         self.complete = True
         return base64.b64decode(response)
