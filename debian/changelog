@@ -1,3 +1,9 @@
+pure-sasl (0.1.4-1) unstable; urgency=low
+
+  * Fix final response to server in QoP negotation
+
+ -- Tyler Hobbs <tyler@datastax.com>  Fri, 05 Apr 2013 15:04:45 -0500
+
 pure-sasl (0.1.3-1) unstable; urgency=low
 
   * Add support for QoP selection, bugfixes
