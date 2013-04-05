@@ -521,7 +521,7 @@ class GSSAPIMechanism(Mechanism):
 
         encodeddata = base64.b64encode(outdata)
 
-        ret = kerberos.authGSSClientWrap(self.context, data)
+        ret = kerberos.authGSSClientWrap(self.context, encodeddata)
         response = kerberos.authGSSClientResponse(self.context)
         self.complete = True
         return base64.b64decode(response)
