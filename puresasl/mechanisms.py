@@ -293,7 +293,8 @@ class DigestMD5Mechanism(Mechanism):
         self.nc += 1
         resp['nc'] = bytes('%08x' % self.nc)
 
-        self._digest_uri = bytes(self.sasl.host) + b'/' + bytes(self.sasl.service)
+        self._digest_uri = bytes(self.sasl.service) + b'/' + \
+                                                        bytes(self.sasl.host)
         resp['digest-uri'] = quote(self._digest_uri)
 
         a2 = b'AUTHENTICATE:' + self._digest_uri
