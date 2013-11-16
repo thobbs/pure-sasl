@@ -1,3 +1,9 @@
+pure-sasl (0.1.5-1) unstable; urgency=low
+
+  * Fix DigestMD5 processing
+
+ -- Tyler Hobbs <tyler@datastax.com>  Tue, 17 Sep 2013 11:23:44 -0600
+
 pure-sasl (0.1.4-1) unstable; urgency=low
 
   * Fix final response to server in QoP negotation

@@ -1,6 +1,6 @@
 %define modname pure-sasl
-%define version 0.1.4
-%define unmangled_version 0.1.4
+%define version 0.1.5
+%define unmangled_version 0.1.5
 %define release 1
 %{!?python: %define python python26}
 
