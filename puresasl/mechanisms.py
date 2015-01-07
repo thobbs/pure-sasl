@@ -452,8 +452,14 @@ class GSSAPIMechanism(Mechanism):
         self._fetch_properties('host', 'service')
 
         krb_service = b'@'.join((bytes(self.service), bytes(self.host)))
-        _, self.context = kerberos.authGSSClientInit(
-                service=krb_service, principal=self.principal)
+        try:
+            _, self.context = kerberos.authGSSClientInit(
+                    service=krb_service, principal=self.principal)
+        except TypeError:
+            if self.principal is not None:
+                raise StandardError("Error: kerberos library does not support principal.")
+            _, self.context = kerberos.authGSSClientInit(
+                    service=krb_service)
 
     def process(self, challenge=None):
         if not self._have_negotiated_details:
