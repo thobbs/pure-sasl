@@ -1,3 +1,10 @@
+pure-sasl (0.1.6) unstable; urgency=low
+
+  * Add AUTHZID support for PLAIN mechanism
+  * Allow GSS to work with older versions of pykerberos
+
+ -- Tyler Hobbs <tyler@datastax.com>  Fri, 09 Jan 2015 13:06:18 -0600
+
 pure-sasl (0.1.5-1) unstable; urgency=low
 
   * Fix DigestMD5 processing

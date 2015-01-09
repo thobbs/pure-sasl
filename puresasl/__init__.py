@@ -1,5 +1,5 @@
-__version__ = '0.1.5'
-__version_info__ = (0, 1, 5)
+__version__ = '0.1.6'
+__version_info__ = (0, 1, 6)
 
 
 class SASLError(Exception):
@@ -8,6 +8,7 @@ class SASLError(Exception):
     SASL client or mechanism.
     """
     pass
+
 
 class SASLProtocolException(Exception):
     """
