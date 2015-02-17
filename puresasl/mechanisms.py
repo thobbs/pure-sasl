@@ -135,6 +135,12 @@ class PlainMechanism(Mechanism):
 
     allows_anonymous = False
 
+    def wrap(self, outgoing):
+        return outgoing
+
+    def unwrap(self, incoming):
+        return incoming
+
     def __init__(self, sasl, username=None, password=None, identity='', **props):
         Mechanism.__init__(self, sasl)
         self.identity = identity
@@ -143,6 +149,7 @@ class PlainMechanism(Mechanism):
 
     def process(self, challenge=None):
         self._fetch_properties('username', 'password')
+        self.complete = True
         return bytes(self.identity) + b'\x00' + bytes(self.username) + b'\x00' + bytes(self.password)
 
     def dispose(self):
