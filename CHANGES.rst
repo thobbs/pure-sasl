@@ -1,3 +1,9 @@
+0.1.7
+=====
+February 17th, 2015
+
+* Add wrap and unwrap to PlainMechanism
+
 0.1.6
 =====
 January 9th, 2015
