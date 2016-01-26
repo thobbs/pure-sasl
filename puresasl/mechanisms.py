@@ -192,7 +192,7 @@ class DigestMD5Mechanism(Mechanism):
     dec_magic = 'Digest session key to server-to-client signing key magic'
 
     def __init__(self, sasl, username=None, password=None, **props):
-        raise NotImplemented("Digest MD5 mechanism is not yet supported")
+        raise NotImplementedError("Digest MD5 mechanism is not yet supported")
 
 
 class GSSAPIMechanism(Mechanism):
