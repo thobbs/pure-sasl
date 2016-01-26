@@ -43,7 +43,7 @@ class Mechanism(object):
     dictionary_safe = False
     """ True if the mechanism is safe against passive dictionary attacks. """
 
-    def __init__(self, sasl):
+    def __init__(self, sasl, **props):
         self.sasl = sasl
 
     def process(self, challenge=None):
