@@ -96,7 +96,7 @@ class Mechanism(object):
         Choose a quality of protection based on the user's requirements and
         what the server supports.
         """
-        available_qops = set(self.sasl.qops) & set(server_offered_qops)
+        available_qops = self.sasl.qops & set(server_offered_qops)
         if not available_qops:
             raise SASLProtocolException("Your requested quality of "
                     "protection is one of (%s), but the server is only "

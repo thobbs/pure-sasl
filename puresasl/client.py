@@ -114,7 +114,7 @@ class SASLClient(object):
         self.authorization_id = authorization_id
         self.mechanism = mechanism
         self.callback = callback
-        self.qops = qops
+        self.qops = set(qops)
         self.mutual_auth = mutual_auth
         self.max_buffer = max_buffer
 
