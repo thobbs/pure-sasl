@@ -206,7 +206,7 @@ class SASLClient(object):
         if not allow_active:
             candidates = [m for m in candidates if m.active_safe]
         if not allow_dictionary:
-            candidates = [m for m in candidates if m.allow_dictionary]
+            candidates = [m for m in candidates if m.dictionary_safe]
 
         if not candidates:
             raise SASLError("None of the mechanisms listed meet all "
