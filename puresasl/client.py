@@ -77,7 +77,7 @@ class SASLClient(object):
         usually the name of the protocol, such as `imap` or `http`.
 
         `mechanism` may be the string name of a mechanism to use, like
-        'DIGEST-MD5' or 'GSSAPI'.  If left as ``None``, :meth:`choose_mechanism`
+        'PLAIN' or 'GSSAPI'.  If left as ``None``, :meth:`choose_mechanism`
         must be used with a list of mechanisms that the server supports before
         `process()` can be used.
 
@@ -95,8 +95,6 @@ class SASLClient(object):
         If the chosen mechanism supports mutual authentication, which is
         authentication of the server by the client, this may be set to
         ``True`` to ensure that mutual authentication is performed.
-        Mechanisms that support mutual authentication inclue ``DIGEST-MD5``
-        and ``GSSAPI``.
 
         A max buffer size may be set with `max_buffer`.  If a max buffer size
         is also set during negotiation by the server, the min of these two
