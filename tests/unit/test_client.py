@@ -41,7 +41,7 @@ class SASLClientTest(unittest.TestCase):
         self.assertRaises(SASLError, client.dispose)
 
     def test_choose_mechanism(self):
-        client = SASLClient('localhost')
+        client = SASLClient('localhost', service='something')
         choices = ['invalid']
         self.assertRaises(SASLError, client.choose_mechanism, choices)
 
