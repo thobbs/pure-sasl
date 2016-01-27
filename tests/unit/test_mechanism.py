@@ -115,8 +115,9 @@ class GSSAPIMechanismTest(_BaseMechanismTests):
         self.assertRaises(SASLProtocolException, self.sasl.process, msg)
 
         max_len = 100
+        self.assertLess(max_len, self.sasl.max_buffer)
         for i, qop in ((1, 'auth'), (2, 'auth-int'), (4, 'auth-conf')):  # 1, 2, 4 --> qop flag
-            qop_size = struct.pack('!i', i << 24 | 100)
+            qop_size = struct.pack('!i', i << 24 | max_len)
             response = base64.b64encode(qop_size)
             with patch('puresasl.mechanisms.kerberos.authGSSClientResponse', return_value=response), \
                     patch('puresasl.mechanisms.kerberos.authGSSClientWrap') as authGSSClientWrap:
@@ -124,6 +125,7 @@ class GSSAPIMechanismTest(_BaseMechanismTests):
                 self.assertEqual(self.sasl.process(msg), qop_size)
                 self.assertTrue(self.mechanism.complete)
                 self.assertEqual(self.mechanism.qop, qop)
+                self.assertEqual(self.mechanism.max_buffer, max_len)
 
                 args = authGSSClientWrap.call_args[0]
                 out_data = args[1]
