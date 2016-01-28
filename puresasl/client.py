@@ -1,7 +1,7 @@
 from functools import wraps
 
 import puresasl.mechanisms as mech_mod
-from puresasl import SASLError
+from puresasl import SASLError, QOP
 
 
 def _require_mech(f):
@@ -70,7 +70,7 @@ class SASLClient(object):
     """
 
     def __init__(self, host, service=None, mechanism=None, authorization_id=None,
-            callback=None, qops=(b'auth', b'auth-int', b'auth-conf'),
+            callback=None, qops=QOP.all,
             mutual_auth=False, max_buffer=65536, **mechanism_props):
         """
         `host` is the name of the SASL server, typically an FQDN, and `service` is
