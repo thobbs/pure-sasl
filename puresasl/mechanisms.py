@@ -4,7 +4,6 @@ import hmac
 import struct
 import sys
 
-from ctypes import create_string_buffer
 from puresasl import SASLError, SASLProtocolException, QOP
 
 try:
@@ -13,11 +12,10 @@ try:
 except ImportError:
     _have_kerberos = False
 
-# six.b without the dep
 PY3 = sys.version_info[0] == 3
 if PY3:
     def _b(s):
-        return s.encode("latin-1")
+        return s.encode("utf-8")
 else:
     def _b(s):
         return s
@@ -260,35 +258,27 @@ class GSSAPIMechanism(Mechanism):
         if len(plaintext_data) != 4:
             raise SASLProtocolException("Bad response from server")  # todo: better message
 
-        layers_supported, = struct.unpack_from('B', plaintext_data, 0)
-        server_offered_qops = QOP.names_from_bitmask(layers_supported)
+        word, = struct.unpack('!I', plaintext_data)
+        qop_bits = word >> 24
+        max_length = word & 0xffffff
+        server_offered_qops = QOP.names_from_bitmask(qop_bits)
         self._pick_qop(server_offered_qops)
 
-        max_length, = struct.unpack('!i', b'\x00' + plaintext_data[1:])
         self.max_buffer = min(self.sasl.max_buffer, max_length)
 
         """
-        Construct the reply.
-
         byte 0: the selected qop. 1==auth, 2==auth-int, 4==auth-conf
         byte 1-3: the max length for any buffer sent back and forth on
             this connection. (big endian)
         the rest of the buffer: the authorization user name in UTF-8 -
             not null terminated.
-
-        So, we write the max length and authorization user name first, then
-        overwrite the first byte of the buffer with the qop.  This is ok since
-        the max length is writen out in big endian.
         """
-        i = len(self.user)
-        fmt = '!I' + str(i) + 's'
-        outdata = create_string_buffer(4 + i)
-        struct.pack_into(fmt, outdata, 0, self.max_buffer, _b(self.user))
+        l = len(self.user)
+        fmt = '!I' + str(l) + 's'
+        word = QOP.flag_from_name(self.qop) << 24 | self.max_buffer
+        out = struct.pack(fmt, word, _b(self.user),)
 
-        qop = QOP.flag_from_name(self.qop)
-        struct.pack_into('!B', outdata, 0, qop)
-
-        encoded = base64.b64encode(outdata).decode('ascii')
+        encoded = base64.b64encode(out).decode('ascii')
 
         kerberos.authGSSClientWrap(self.context, encoded)
         response = kerberos.authGSSClientResponse(self.context)
