@@ -93,7 +93,7 @@ class Mechanism(object):
         needed = [p for p in properties if getattr(self, p, None) is None]
         if needed and not self.sasl.callback:
             raise SASLError('The following properties are required, but a '
-                    'callback has not been set: %s' % ', '.join(needed))
+                            'callback has not been set: %s' % ', '.join(needed))
 
         for prop in needed:
             setattr(self, prop, self.sasl.callback(prop))
@@ -109,8 +109,8 @@ class Mechanism(object):
             configured = b', '.join(configured_qops).decode('ascii')
             offered = b', '.join(server_qop_set).decode('ascii')
             raise SASLProtocolException("Your requested quality of "
-                    "protection is one of (%s), but the server is only "
-                    "offering (%s)" % (configured, offered))
+                                        "protection is one of (%s), but the server is only "
+                                        "offering (%s)" % (configured, offered))
         else:
             self.qops = available_qops
             for qop in (QOP.AUTH_CONF, QOP.AUTH_INT, QOP.AUTH):
@@ -223,13 +223,12 @@ class GSSAPIMechanism(Mechanism):
 
         krb_service = '@'.join((self.service, self.host))
         try:
-            _, self.context = kerberos.authGSSClientInit(
-                    service=krb_service, principal=self.principal)
+            _, self.context = kerberos.authGSSClientInit(service=krb_service,
+                                                         principal=self.principal)
         except TypeError:
             if self.principal is not None:
                 raise Exception("Error: kerberos library does not support principal.")
-            _, self.context = kerberos.authGSSClientInit(
-                    service=krb_service)
+            _, self.context = kerberos.authGSSClientInit(service=krb_service)
 
     def process(self, challenge=None):
         if not self._have_negotiated_details:

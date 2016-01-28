@@ -7,7 +7,7 @@ import base64
 import hashlib
 import hmac
 import kerberos
-from mock import Mock, patch
+from mock import patch
 import six
 import struct
 
@@ -55,7 +55,7 @@ class PlainTextMechanismTest(_BaseMechanismTests):
     sasl_kwargs = {'username': username, 'password': password}
 
     def test_process(self):
-        for challenge in (None, '', b'asdf',  u"\U0001F44D"):
+        for challenge in (None, '', b'asdf', u"\U0001F44D"):
             response = self.sasl.process(challenge)
             self.assertIn(six.b(self.username), response)
             self.assertIn(six.b(self.password), response)
@@ -74,7 +74,6 @@ class GSSAPIMechanismTest(_BaseMechanismTests):
     mechanism_class = GSSAPIMechanism
     service = 'GSSAPI'
     sasl_kwargs = {'service': service}
-
 
     @patch('puresasl.mechanisms.kerberos.authGSSClientWrap')
     @patch('puresasl.mechanisms.kerberos.authGSSClientUnwrap')

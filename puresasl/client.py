@@ -70,8 +70,8 @@ class SASLClient(object):
     """
 
     def __init__(self, host, service=None, mechanism=None, authorization_id=None,
-            callback=None, qops=QOP.all,
-            mutual_auth=False, max_buffer=65536, **mechanism_props):
+                 callback=None, qops=QOP.all, mutual_auth=False, max_buffer=65536,
+                 **mechanism_props):
         """
         `host` is the name of the SASL server, typically an FQDN, and `service` is
         usually the name of the protocol, such as `imap` or `http`.
@@ -176,7 +176,8 @@ class SASLClient(object):
         self._chosen_mech.dispose()
 
     def choose_mechanism(self, mechanism_choices, allow_anonymous=True,
-            allow_plaintext=True, allow_active=True, allow_dictionary=True):
+                         allow_plaintext=True, allow_active=True,
+                         allow_dictionary=True):
         """
         Choose a mechanism from a list of mechanisms based on security
         scores for mechanisms and required properties of the mechanism.
@@ -196,8 +197,8 @@ class SASLClient(object):
         to passive dictionary attacks will not be considered.
         """
         candidates = [mech_mod.mechanisms[choice]
-                for choice in mechanism_choices
-                if choice in mech_mod.mechanisms]
+                      for choice in mechanism_choices
+                      if choice in mech_mod.mechanisms]
 
         if not allow_anonymous:
             candidates = [m for m in candidates if not m.allows_anonymous]
@@ -210,7 +211,7 @@ class SASLClient(object):
 
         if not candidates:
             raise SASLError("None of the mechanisms listed meet all "
-                    "required properties")
+                            "required properties")
 
         # Pick the best mechanism based on its security score
         mech_class = max(candidates, key=lambda mech: mech.score)

@@ -18,6 +18,7 @@ class SASLProtocolException(Exception):
     """
     pass
 
+
 class QOP(object):
 
     AUTH = b'auth'
