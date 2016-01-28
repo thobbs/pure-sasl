@@ -32,7 +32,7 @@ class QOP(object):
 
     @classmethod
     def names_from_bitmask(cls, byt):
-        return [name for bit, name in cls.bit_map.items() if bit & byt]
+        return set(name for bit, name in cls.bit_map.items() if bit & byt)
 
     @classmethod
     def flag_from_name(cls, name):

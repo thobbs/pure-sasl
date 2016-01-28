@@ -2,16 +2,25 @@ import base64
 import hashlib
 import hmac
 import struct
+import sys
 
 from ctypes import create_string_buffer
-from puresasl import SASLError, SASLProtocolException
-from puresasl.util import bytes
+from puresasl import SASLError, SASLProtocolException, QOP
 
 try:
     import kerberos
     _have_kerberos = True
 except ImportError:
     _have_kerberos = False
+
+# six.b without the dep
+PY3 = sys.version_info[0] == 3
+if PY3:
+    def _b(s):
+        return s.encode("latin-1")
+else:
+    def _b(s):
+        return s
 
 
 class Mechanism(object):
@@ -91,20 +100,22 @@ class Mechanism(object):
         for prop in needed:
             setattr(self, prop, self.sasl.callback(prop))
 
-    def _pick_qop(self, server_offered_qops):
+    def _pick_qop(self, server_qop_set):
         """
         Choose a quality of protection based on the user's requirements and
         what the server supports.
         """
-        available_qops = self.sasl.qops & set(server_offered_qops)
+        configured_qops = set(_b(qop) if isinstance(qop, str) else qop for qop in self.sasl.qops)  # normalize user-defined config
+        available_qops = configured_qops & server_qop_set
         if not available_qops:
+            configured = b', '.join(configured_qops).decode('ascii')
+            offered = b', '.join(server_qop_set).decode('ascii')
             raise SASLProtocolException("Your requested quality of "
                     "protection is one of (%s), but the server is only "
-                    "offering (%s)" %
-                    (', '.join(self.sasl.qops), ', '.join(server_offered_qops)))
+                    "offering (%s)" % (configured, offered))
         else:
             self.qops = available_qops
-            for qop in ('auth-conf', 'auth-int', 'auth'):
+            for qop in (QOP.AUTH_CONF, QOP.AUTH_INT, QOP.AUTH):
                 if qop in self.qops:
                     self.qop = qop
                     break
@@ -148,7 +159,7 @@ class PlainMechanism(Mechanism):
     def process(self, challenge=None):
         self._fetch_properties('username', 'password')
         self.complete = True
-        return bytes(self.identity) + b'\x00' + bytes(self.username) + b'\x00' + bytes(self.password)
+        return b''.join((_b(self.identity), b'\x00', _b(self.username), b'\x00', _b(self.password)))
 
     def dispose(self):
         self.password = None
@@ -171,9 +182,9 @@ class CramMD5Mechanism(PlainMechanism):
             return None
 
         self._fetch_properties('username', 'password')
-        mac = hmac.HMAC(key=bytes(self.password), digestmod=hashlib.md5)
+        mac = hmac.HMAC(key=_b(self.password), digestmod=hashlib.md5)
         mac.update(challenge)
-        return bytes(self.username) + b' ' + bytes(mac.hexdigest())
+        return b''.join((_b(self.username), b' ', _b(mac.hexdigest())))
 
     def dispose(self):
         self.password = None
@@ -212,13 +223,13 @@ class GSSAPIMechanism(Mechanism):
         self.principal = principal
         self._fetch_properties('host', 'service')
 
-        krb_service = b'@'.join((bytes(self.service), bytes(self.host)))
+        krb_service = '@'.join((self.service, self.host))
         try:
             _, self.context = kerberos.authGSSClientInit(
                     service=krb_service, principal=self.principal)
         except TypeError:
             if self.principal is not None:
-                raise StandardError("Error: kerberos library does not support principal.")
+                raise Exception("Error: kerberos library does not support principal.")
             _, self.context = kerberos.authGSSClientInit(
                     service=krb_service)
 
@@ -229,18 +240,18 @@ class GSSAPIMechanism(Mechanism):
             self._have_negotiated_details = True
             return base64.b64decode(_negotiated_details)
 
-        challenge = base64.b64encode(challenge)
+        challenge = base64.b64encode(challenge).decode('ascii')  # kerberos methods expect strings, not bytes
         if self.user is None:
             ret = kerberos.authGSSClientStep(self.context, challenge)
             if ret == kerberos.AUTH_GSS_COMPLETE:
                 self.user = kerberos.authGSSClientUserName(self.context)
-                return ''
+                return b''
             else:
                 response = kerberos.authGSSClientResponse(self.context)
                 if response:
                     response = base64.b64decode(response)
                 else:
-                    response = ''
+                    response = b''
             return response
 
         kerberos.authGSSClientUnwrap(self.context, challenge)
@@ -249,18 +260,11 @@ class GSSAPIMechanism(Mechanism):
         if len(plaintext_data) != 4:
             raise SASLProtocolException("Bad response from server")  # todo: better message
 
-        layers_supported, = struct.unpack('B', plaintext_data[0])
-        server_offered_qops = []
-        if 0x01 & layers_supported:
-            server_offered_qops.append('auth')
-        if 0x02 & layers_supported:
-            server_offered_qops.append('auth-int')
-        if 0x04 & layers_supported:
-            server_offered_qops.append('auth-conf')
-
+        layers_supported, = struct.unpack_from('B', plaintext_data, 0)
+        server_offered_qops = QOP.names_from_bitmask(layers_supported)
         self._pick_qop(server_offered_qops)
 
-        max_length, = struct.unpack('!i', '\x00' + plaintext_data[1:])
+        max_length, = struct.unpack('!i', b'\x00' + plaintext_data[1:])
         self.max_buffer = min(self.sasl.max_buffer, max_length)
 
         """
@@ -279,18 +283,14 @@ class GSSAPIMechanism(Mechanism):
         i = len(self.user)
         fmt = '!I' + str(i) + 's'
         outdata = create_string_buffer(4 + i)
-        struct.pack_into(fmt, outdata, 0, self.max_buffer, self.user)
+        struct.pack_into(fmt, outdata, 0, self.max_buffer, _b(self.user))
 
-        qop = 1
-        if self.qop == 'auth-int':
-            qop = 2
-        elif self.qop == 'auth-conf':
-            qop = 4
+        qop = QOP.flag_from_name(self.qop)
         struct.pack_into('!B', outdata, 0, qop)
 
-        encodeddata = base64.b64encode(outdata)
+        encoded = base64.b64encode(outdata).decode('ascii')
 
-        kerberos.authGSSClientWrap(self.context, encodeddata)
+        kerberos.authGSSClientWrap(self.context, encoded)
         response = kerberos.authGSSClientResponse(self.context)
         self.complete = True
         return base64.b64decode(response)
@@ -313,7 +313,7 @@ class GSSAPIMechanism(Mechanism):
             kerberos.authGSSClientUnwrap(self.context, incoming)
             conf = kerberos.authGSSClientResponseConf(self.context)
             if 0 == conf and self.qop == 'auth-conf':
-                raise StandardError("Error: confidentiality requested, but not honored by the server.")
+                raise Exception("Error: confidentiality requested, but not honored by the server.")
             return base64.b64decode(kerberos.authGSSClientResponse(self.context))
         else:
             return incoming
