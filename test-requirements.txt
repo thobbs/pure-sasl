@@ -1,0 +1,4 @@
+nose
+mock<=1.0.1
+six
+kerberos
