@@ -104,10 +104,10 @@ class GSSAPIMechanismTest(_BaseMechanismTests):
 
         username = 'username'
         # user; this has to be last because it sets mechanism.user
-        with patch('puresasl.mechanisms.kerberos.authGSSClientStep', return_value=kerberos.AUTH_GSS_COMPLETE),\
-                patch('puresasl.mechanisms.kerberos.authGSSClientUserName', return_value=six.b(username)):
-            self.assertEqual(self.sasl.process(msg), six.b(''))
-            self.assertEqual(self.mechanism.user, six.b(username))
+        with patch('puresasl.mechanisms.kerberos.authGSSClientStep', return_value=kerberos.AUTH_GSS_COMPLETE):
+            with patch('puresasl.mechanisms.kerberos.authGSSClientUserName', return_value=six.b(username)):
+                self.assertEqual(self.sasl.process(msg), six.b(''))
+                self.assertEqual(self.mechanism.user, six.b(username))
 
     @patch('puresasl.mechanisms.kerberos.authGSSClientUnwrap')
     def test_process_qop(self, *args):
@@ -122,19 +122,19 @@ class GSSAPIMechanismTest(_BaseMechanismTests):
         for i, qop in QOP.bit_map.items():
             qop_size = struct.pack('!i', i << 24 | max_len)
             response = base64.b64encode(qop_size)
-            with patch('puresasl.mechanisms.kerberos.authGSSClientResponse', return_value=response), \
-                    patch('puresasl.mechanisms.kerberos.authGSSClientWrap') as authGSSClientWrap:
-                self.mechanism.complete = False
-                self.assertEqual(self.sasl.process(msg), qop_size)
-                self.assertTrue(self.mechanism.complete)
-                self.assertEqual(self.mechanism.qop, qop)
-                self.assertEqual(self.mechanism.max_buffer, max_len)
+            with patch('puresasl.mechanisms.kerberos.authGSSClientResponse', return_value=response):
+                with patch('puresasl.mechanisms.kerberos.authGSSClientWrap') as authGSSClientWrap:
+                    self.mechanism.complete = False
+                    self.assertEqual(self.sasl.process(msg), qop_size)
+                    self.assertTrue(self.mechanism.complete)
+                    self.assertEqual(self.mechanism.qop, qop)
+                    self.assertEqual(self.mechanism.max_buffer, max_len)
 
-                args = authGSSClientWrap.call_args[0]
-                out_data = args[1]
-                out = base64.b64decode(out_data)
-                self.assertEqual(out[:4], qop_size)
-                self.assertEqual(out[4:], six.b(self.mechanism.user))
+                    args = authGSSClientWrap.call_args[0]
+                    out_data = args[1]
+                    out = base64.b64decode(out_data)
+                    self.assertEqual(out[:4], qop_size)
+                    self.assertEqual(out[4:], six.b(self.mechanism.user))
 
     @patch('puresasl.mechanisms.kerberos.authGSSClientClean')
     def test_dispose_basic(self, authGSSClientUnwrap, *args):

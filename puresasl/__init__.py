@@ -28,7 +28,7 @@ class QOP(object):
 
     bit_map = {1: AUTH, 2: AUTH_INT, 4: AUTH_CONF}
 
-    name_map = {bit: name for name, bit in bit_map.items()}
+    name_map = dict((bit, name) for name, bit in bit_map.items())
 
     @classmethod
     def names_from_bitmask(cls, byt):
