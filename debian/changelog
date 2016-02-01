@@ -1,3 +1,10 @@
+pure-sasl (0.2.0) unstable; urgency=medium
+
+  * Add support for python 3
+  * Temporarily disable broken MD5Digest mechanism
+
+ -- Tyler Hobbs <tyler@datastax.com>  Mon, 01 Feb 2016 16:15:12 -0600
+
 pure-sasl (0.1.6) unstable; urgency=low
 
   * Add AUTHZID support for PLAIN mechanism

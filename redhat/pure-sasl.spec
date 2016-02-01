@@ -1,6 +1,6 @@
 %define modname pure-sasl
-%define version 0.1.6
-%define unmangled_version 0.1.6
+%define version 0.2.0
+%define unmangled_version 0.2.0
 %define release 1
 %{!?python: %define python python26}
 
@@ -20,7 +20,7 @@ Url: http://github.com/thobbs/pure-sasl
 %description
 This package provides a reasonably high-level SASL client written
 in pure Python.  New mechanisms may be integrated easily, but by default,
-support for PLAIN, ANONYMOUS, CRAM-MD5, DIGEST-MD5, and GSSAPI are
+support for PLAIN, ANONYMOUS, CRAM-MD5, and GSSAPI are
 provided.
 
 %prep

@@ -1,3 +1,11 @@
+0.2.0
+=====
+February 1st, 2016
+
+* Add support for Python 3
+* Add unit tests
+* Temporarily disable broken MD5DigestMechanism
+
 0.1.7
 =====
 February 17th, 2015
