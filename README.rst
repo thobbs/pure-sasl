@@ -1,10 +1,16 @@
 pure-sasl
 =========
+
+.. image:: https://travis-ci.org/thobbs/pure-sasl.png?branch=master
+   :target: https://travis-ci.org/thobbs/pure-sasl
+
 pure-sasl is a pure python client-side SASL implementation.
 
 At the moment, it supports the following mechanisms: ANONYMOUS, PLAIN,
-CRAM-MD5, DIGEST-MD5, and GSSAPI. Support for other mechanisms may be
-added in the future.
+CRAM-MD5, and GSSAPI. Support for other mechanisms may be added in the
+future.
+
+Both Python 2 and Python 3 are supported.
 
 Example Usage
 -------------
