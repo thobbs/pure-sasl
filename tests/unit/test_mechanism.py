@@ -58,7 +58,7 @@ class PlainTextMechanismTest(_BaseMechanismTests):
     mechanism_class = PlainMechanism
     username = 'user'
     password = 'pass'
-    sasl_kwargs = {'username': username, 'password': password}
+    sasl_kwargs = {'username': username, 'password': password, 'max_buffer': 100}
 
     def test_process(self):
         for challenge in (None, '', b'asdf', u"\U0001F44D"):
@@ -71,6 +71,9 @@ class PlainTextMechanismTest(_BaseMechanismTests):
         msg = 'msg'
         self.assertIs(self.sasl.wrap(msg), msg)
         self.assertIs(self.sasl.unwrap(msg), msg)
+
+        self.assertRaises(ValueError, self.sasl.wrap, '0' * 101)
+        self.assertRaises(ValueError, self.sasl.unwrap, '0' * 101)
 
 if _have_kerberos:
 

@@ -52,6 +52,7 @@ class Mechanism(object):
 
     def __init__(self, sasl, **props):
         self.sasl = sasl
+        self.max_buffer = self.sasl.max_buffer
 
     def process(self, challenge=None):
         """
@@ -118,6 +119,12 @@ class Mechanism(object):
                     self.qop = qop
                     break
 
+    def _check_max_buffer(self, data_len):
+        if data_len > self.max_buffer:
+            raise ValueError("Data length of %d exceeded configured max buffer of %d.  Consider adjusting "
+                             "the max_buffer argument to the SASLClient constructor.",
+                             data_len, self.max_buffer)
+
 
 class AnonymousMechanism(Mechanism):
     """
@@ -142,12 +149,6 @@ class PlainMechanism(Mechanism):
 
     allows_anonymous = False
 
-    def wrap(self, outgoing):
-        return outgoing
-
-    def unwrap(self, incoming):
-        return incoming
-
     def __init__(self, sasl, username=None, password=None, identity='', **props):
         Mechanism.__init__(self, sasl)
         self.identity = identity
@@ -158,6 +159,14 @@ class PlainMechanism(Mechanism):
         self._fetch_properties('username', 'password')
         self.complete = True
         return b''.join((_b(self.identity), b'\x00', _b(self.username), b'\x00', _b(self.password)))
+
+    def wrap(self, outgoing):
+        self._check_max_buffer(len(outgoing))
+        return outgoing
+
+    def unwrap(self, incoming):
+        self._check_max_buffer(len(incoming))
+        return incoming
 
     def dispose(self):
         self.password = None
@@ -285,6 +294,7 @@ class GSSAPIMechanism(Mechanism):
         return base64.b64decode(response)
 
     def wrap(self, outgoing):
+        self._check_max_buffer(len(outgoing))
         if self.qop != 'auth':
             outgoing = base64.b64encode(outgoing)
             if self.qop == 'auth-conf':
@@ -297,6 +307,7 @@ class GSSAPIMechanism(Mechanism):
             return outgoing
 
     def unwrap(self, incoming):
+        self._check_max_buffer(len(incoming))
         if self.qop != 'auth':
             incoming = base64.b64encode(incoming)
             kerberos.authGSSClientUnwrap(self.context, incoming)

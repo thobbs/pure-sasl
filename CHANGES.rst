@@ -1,3 +1,10 @@
+0.2.1
+=====
+In Progress
+
+* Check wrap/unwrap arguments against configured max_buffer; raise ValueError
+  if this is exceeded (#13)
+
 0.2.0
 =====
 February 1st, 2016
