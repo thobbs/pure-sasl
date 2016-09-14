@@ -266,10 +266,6 @@ class DigestMD5Mechanism(Mechanism):
     enc_magic = 'Digest session key to client-to-server signing key magic'
     dec_magic = 'Digest session key to server-to-client signing key magic'
 
-    # temporary for testing
-    def _pick_qop(self, *args):
-        self.qop = 'auth'
-
     def __init__(self, sasl, username=None, password=None, **props):
         Mechanism.__init__(self, sasl)
         self.username = username
@@ -348,9 +344,9 @@ class DigestMD5Mechanism(Mechanism):
                 incoming[4 + num:]
                 msg = mac[:-16]
 
-                mac_conf = self._MAC(self._dec_mac, msg, self._dec_key)
+                mac_conf = self._MAC(self._dec_seq, msg, self._dec_key)
                 if mac[-16:] != mac_conf:
-                    self._desc_sec = None
+                    self._dec_seq = None
                     return result
 
                 self._dec_seq += 1
@@ -458,6 +454,8 @@ class DigestMD5Mechanism(Mechanism):
         a1.update(a1h)
         response = hashlib.md5()
         self._a1 = a1.digest()
+        self._enc_key = hashlib.md5(self._a1 + self.enc_magic).digest()
+        self._dec_key = hashlib.md5(self._a1 + self.dec_magic).digest()
         rv = bytes(a1.hexdigest().lower())
         rv += b':' + self.nonce
         rv += b':' + bytes('%08x' % self.nc)
