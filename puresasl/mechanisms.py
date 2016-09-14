@@ -1,6 +1,7 @@
 import base64
 import hashlib
 import hmac
+import random
 import struct
 import sys
 
@@ -188,6 +189,71 @@ class CramMD5Mechanism(PlainMechanism):
         self.password = None
 
 
+## functions used in DigestMD5 which were originally defined in the now-removed util module
+
+def bytes(text):
+    """
+    Convert Unicode text to UTF-8 encoded bytes.
+
+    Since Python 2.6+ and Python 3+ have similar but incompatible
+    signatures, this function unifies the two to keep code sane.
+
+    :param text: Unicode text to convert to bytes
+    :rtype: bytes (Python3), str (Python2.6+)
+    """
+    if sys.version_info < (3, 0):
+        import __builtin__
+        return __builtin__.bytes(text)
+    else:
+        import builtins
+        if isinstance(text, builtins.bytes):
+            # We already have bytes, so do nothing
+            return text
+        if isinstance(text, list):
+            # Convert a list of integers to bytes
+            return builtins.bytes(text)
+        else:
+            # Convert UTF-8 text to bytes
+            return builtins.bytes(text, encoding='utf-8')
+
+
+def quote(text):
+    """
+    Enclose in quotes and escape internal slashes and double quotes.
+
+    :param text: A Unicode or byte string.
+    """
+    text = bytes(text)
+    return b'"' + text.replace(b'\\', b'\\\\').replace(b'"', b'\\"') + b'"'
+
+
+def num_to_bytes(num):
+    """
+    Convert an integer into a four byte sequence.
+
+    :param integer num: An integer to convert to its byte representation.
+    """
+    bval = b''
+    bval += bytes(chr(0xFF & (num >> 24)))
+    bval += bytes(chr(0xFF & (num >> 16)))
+    bval += bytes(chr(0xFF & (num >> 8)))
+    bval += bytes(chr(0xFF & (num >> 0)))
+    return bval
+
+
+def bytes_to_num(bval):
+    """
+    Convert a four byte sequence to an integer.
+
+    :param bytes bval: A four byte sequence to turn into an integer.
+    """
+    num = 0
+    num += ord(bval[0] << 24)
+    num += ord(bval[1] << 16)
+    num += ord(bval[2] << 8)
+    num += ord(bval[3])
+    return num
+
 # TODO: incomplete, not tested
 class DigestMD5Mechanism(Mechanism):
 
@@ -199,6 +265,10 @@ class DigestMD5Mechanism(Mechanism):
 
     enc_magic = 'Digest session key to client-to-server signing key magic'
     dec_magic = 'Digest session key to server-to-client signing key magic'
+
+    # temporary for testing
+    def _pick_qop(self, *args):
+        self.qop = 'auth'
 
     def __init__(self, sasl, username=None, password=None, **props):
         Mechanism.__init__(self, sasl)
@@ -238,8 +308,6 @@ class DigestMD5Mechanism(Mechanism):
         self.nc = 0
 
     def _MAC(self, seq, msg, key):
-        """
-        """
         mac = hmac.HMAC(key=key, digestmod=hashlib.md5)
         seqnum = num_to_bytes(seq)
         mac.update(seqnum)
@@ -247,44 +315,52 @@ class DigestMD5Mechanism(Mechanism):
         return mac.digest()[:10] + b'\x00\x01' + seqnum
 
     def wrap(self, outgoing):
-        result = b''
-        # Leave buffer space for the MAC
-        mbuf = self.max_buffer - 10 - 2 - 4
+        if self.qop == 'auth-int':
+            result = b''
+            # Leave buffer space for the MAC
+            mbuf = self.max_buffer - 10 - 2 - 4
 
-        while outgoing:
-            msg = outgoing[:mbuf]
-            mac = self._MAC(self._enc_seq, msg, self._enc_key)
-            self._enc_seq += 1
-            msg += mac
-            result += num_to_bytes(len(msg)) + msg
-            outgoing = outgoing[mbuf:]
+            while outgoing:
+                msg = outgoing[:mbuf]
+                mac = self._MAC(self._enc_seq, msg, self._enc_key)
+                self._enc_seq += 1
+                msg += mac
+                result += num_to_bytes(len(msg)) + msg
+                outgoing = outgoing[mbuf:]
 
-        return result
+            return result
+        elif self.qop == 'auth-conf':
+            raise NotImplementedError('auth-conf QoP not yet implemented for DIGEST-MD5')
+        else:
+            return outgoing
 
     def unwrap(self, incoming):
-        """
-        """
-        incoming = b'' + incoming
-        result = b''
+        if self.qop == 'auth-int':
+            incoming = b'' + incoming
+            result = b''
 
-        while len(incoming) > 4:
-            num = bytes_to_num(incoming)
-            if len(incoming) < (num + 4):
-                return result
+            while len(incoming) > 4:
+                num = bytes_to_num(incoming)
+                if len(incoming) < (num + 4):
+                    return result
 
-            mac = incoming[4:4 + num]
-            incoming[4 + num:]
-            msg = mac[:-16]
+                mac = incoming[4:4 + num]
+                incoming[4 + num:]
+                msg = mac[:-16]
 
-            mac_conf = self._MAC(self._dec_mac, msg, self._dec_key)
-            if mac[-16:] != mac_conf:
-                self._desc_sec = None
-                return result
+                mac_conf = self._MAC(self._dec_mac, msg, self._dec_key)
+                if mac[-16:] != mac_conf:
+                    self._desc_sec = None
+                    return result
 
-            self._dec_seq += 1
-            result += msg
+                self._dec_seq += 1
+                result += msg
 
-        return result
+            return result
+        elif self.qop == 'auth-conf':
+            raise NotImplementedError('auth-conf QoP not yet implemented for DIGEST-MD5')
+        else:
+            return incoming
 
     def response(self):
         required_props = ['username']
@@ -293,8 +369,6 @@ class DigestMD5Mechanism(Mechanism):
         self._fetch_properties(*required_props)
 
         resp = {}
-        if 'auth-int' in self.qops:
-            self.qop = b'auth-int'
         resp['qop'] = self.qop
 
         if getattr(self, 'realm', None) is not None:
@@ -426,7 +500,7 @@ class DigestMD5Mechanism(Mechanism):
                 server_offered_qops = [x.strip() for x in challenge_dict[b'qop'].split(b',')]
             else:
                 server_offered_qops = [b'auth']
-            self._pick_qop(server_offered_qops)
+            self._pick_qop(set(server_offered_qops))
 
             if b'maxbuf' in challenge_dict:
                 self.max_buffer = min(
