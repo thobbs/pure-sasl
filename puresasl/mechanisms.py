@@ -233,12 +233,13 @@ def num_to_bytes(num):
 
     :param integer num: An integer to convert to its byte representation.
     """
-    bval = b''
-    bval += bytes(chr(0xFF & (num >> 24)))
-    bval += bytes(chr(0xFF & (num >> 16)))
-    bval += bytes(chr(0xFF & (num >> 8)))
-    bval += bytes(chr(0xFF & (num >> 0)))
-    return bval
+    #bval = b''
+    #bval += bytes(chr(0xFF & (num >> 24)))
+    #bval += bytes(chr(0xFF & (num >> 16)))
+    #bval += bytes(chr(0xFF & (num >> 8)))
+    #bval += bytes(chr(0xFF & (num >> 0)))
+    #return bval
+    return struct.pack('<L', num)
 
 
 def bytes_to_num(bval):
@@ -247,12 +248,13 @@ def bytes_to_num(bval):
 
     :param bytes bval: A four byte sequence to turn into an integer.
     """
-    num = 0
-    num += ord(bval[0] << 24)
-    num += ord(bval[1] << 16)
-    num += ord(bval[2] << 8)
-    num += ord(bval[3])
-    return num
+    #num = 0
+    #num += ord(bval[0] << 24)
+    #num += ord(bval[1] << 16)
+    #num += ord(bval[2] << 8)
+    #num += ord(bval[3])
+    #return num
+    return struct.unpack('<L', bval)[0]
 
 # TODO: incomplete, not tested
 class DigestMD5Mechanism(Mechanism):
@@ -263,8 +265,11 @@ class DigestMD5Mechanism(Mechanism):
     allows_anonymous = False
     uses_plaintext = False
 
-    enc_magic = 'Digest session key to client-to-server signing key magic'
-    dec_magic = 'Digest session key to server-to-client signing key magic'
+    Kic_magic = 'Digest session key to client-to-server signing key magic constant'
+    Kis_magic = 'Digest session key to server-to-client signing key magic constant'
+
+    Kcc_magic = 'Digest H(A1) to client-to-server sealing key magic constant'
+    Kcs_magic = 'Digest H(A1) to server-to-client sealing key magic constant'
 
     def __init__(self, sasl, username=None, password=None, **props):
         Mechanism.__init__(self, sasl)
@@ -284,6 +289,8 @@ class DigestMD5Mechanism(Mechanism):
         self._dec_buf = b''
         self._dec_key = None
         self._dec_seq = 0
+        self._Kic = None
+        self._Kis = None
 
     def dispose(self):
         self._rspauth_okay = None
@@ -303,8 +310,12 @@ class DigestMD5Mechanism(Mechanism):
         self.cnonce = None
         self.nc = 0
 
+        self._Kic = None
+        self._Kis = None
+
     def _MAC(self, seq, msg, key):
-        mac = hmac.HMAC(key=key, digestmod=hashlib.md5)
+        #mac = hmac.HMAC(key=key, digestmod=hashlib.md5)
+        mac = hmac.new(key)
         seqnum = num_to_bytes(seq)
         mac.update(seqnum)
         mac.update(msg)
@@ -318,7 +329,7 @@ class DigestMD5Mechanism(Mechanism):
 
             while outgoing:
                 msg = outgoing[:mbuf]
-                mac = self._MAC(self._enc_seq, msg, self._enc_key)
+                mac = self._MAC(self._enc_seq, msg, self._Kic)
                 self._enc_seq += 1
                 msg += mac
                 result += num_to_bytes(len(msg)) + msg
@@ -336,18 +347,19 @@ class DigestMD5Mechanism(Mechanism):
             result = b''
 
             while len(incoming) > 4:
-                num = bytes_to_num(incoming)
+                num = bytes_to_num(incoming[0:4])
                 if len(incoming) < (num + 4):
                     return result
 
                 mac = incoming[4:4 + num]
-                incoming[4 + num:]
+                incoming = incoming[4 + num:]
                 msg = mac[:-16]
 
-                mac_conf = self._MAC(self._dec_seq, msg, self._dec_key)
+                mac_conf = self._MAC(self._dec_seq, msg, self._Kis)
                 if mac[-16:] != mac_conf:
-                    self._dec_seq = None
-                    return result
+                    #self._dec_seq = None
+                    #return result
+                    raise Exception('Integrity check failed')
 
                 self._dec_seq += 1
                 result += msg
@@ -389,28 +401,29 @@ class DigestMD5Mechanism(Mechanism):
         resp['response'] = self.gen_hash(a2)
         return b','.join([bytes(k) + b'=' + bytes(v) for k, v in resp.items()])
 
-    def parse_challenge(self, challenge):
+    @staticmethod
+    def parse_challenge(challenge):
         ret = {}
-        var = b''
-        val = b''
+        var = ''
+        val = ''
         in_var = True
         in_quotes = False
         new = False
         escaped = False
         for c in challenge:
-            if sys.version_info >= (3, 0):
-                c = bytes([c])
+            #if sys.version_info >= (3, 0):
+            #    c = bytes([c])
             if in_var:
                 if c.isspace():
                     continue
-                if c == b'=':
+                if c == '=':
                     in_var = False
                     new = True
                 else:
                     var += c
             else:
                 if new:
-                    if c == b'"':
+                    if c == '"':
                         in_quotes = True
                     else:
                         val += c
@@ -420,18 +433,18 @@ class DigestMD5Mechanism(Mechanism):
                         escaped = False
                         val += c
                     else:
-                        if c == b'\\':
+                        if c == '\\':
                             escaped = True
-                        elif c == b'"':
+                        elif c == '"':
                             in_quotes = False
                         else:
                             val += c
                 else:
-                    if c == b',':
+                    if c == ',':
                         if var:
-                            ret[var] = val
-                        var = b''
-                        val = b''
+                            ret[var] = bytes(val)
+                        var = ''
+                        val = ''
                         in_var = True
                     else:
                         val += c
@@ -454,8 +467,8 @@ class DigestMD5Mechanism(Mechanism):
         a1.update(a1h)
         response = hashlib.md5()
         self._a1 = a1.digest()
-        self._enc_key = hashlib.md5(self._a1 + self.enc_magic).digest()
-        self._dec_key = hashlib.md5(self._a1 + self.dec_magic).digest()
+        self._Kic = hashlib.md5(self._a1 + bytes(self.Kic_magic)).digest()
+        self._Kis = hashlib.md5(self._a1 + bytes(self.Kis_magic)).digest()
         rv = bytes(a1.hexdigest().lower())
         rv += b':' + self.nonce
         rv += b':' + bytes('%08x' % self.nc)
@@ -481,28 +494,28 @@ class DigestMD5Mechanism(Mechanism):
             else:
                 return None
 
-        challenge_dict = self.parse_challenge(challenge)
-        if self.sasl.mutual_auth and b'rspauth' in challenge_dict:
-            self.authenticate_server(challenge_dict[b'rspauth'])
+        challenge_dict = DigestMD5Mechanism.parse_challenge(challenge)
+        if self.sasl.mutual_auth and 'rspauth' in challenge_dict:
+            self.authenticate_server(challenge_dict['rspauth'])
         else:
-            if b'realm' not in challenge_dict:
+            if 'realm' not in challenge_dict:
                 self._fetch_properties('realm')
-                challenge_dict[b'realm'] = self.realm
+                challenge_dict['realm'] = self.realm
 
-            for key in (b'nonce', b'realm'):
+            for key in ('nonce', 'realm'):
                 if key in challenge_dict:
                     setattr(self, key, challenge_dict[key])
 
             self.nc = 0
-            if b'qop' in challenge_dict:
-                server_offered_qops = [x.strip() for x in challenge_dict[b'qop'].split(b',')]
+            if 'qop' in challenge_dict:
+                server_offered_qops = [x.strip() for x in challenge_dict['qop'].split(b',')]
             else:
-                server_offered_qops = [b'auth']
+                server_offered_qops = ['auth']
             self._pick_qop(set(server_offered_qops))
 
-            if b'maxbuf' in challenge_dict:
+            if 'maxbuf' in challenge_dict:
                 self.max_buffer = min(
-                        self.sasl.max_buffer, int(challenge_dict[b'maxbuf']))
+                        self.sasl.max_buffer, int(challenge_dict['maxbuf']))
 
             return self.response()
 
