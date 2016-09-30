@@ -1,3 +1,11 @@
+0.3.0
+=====
+September 30th, 2016
+
+* Reintroduce support for MD5DigestMechanism
+* Restrict supported QOPs (Quality of Protection) for mechanisms
+  up front
+
 0.2.0
 =====
 February 1st, 2016
