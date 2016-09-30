@@ -4,6 +4,7 @@ import hmac
 import random
 import struct
 import sys
+import six
 
 from puresasl import SASLError, SASLProtocolException, QOP
 
@@ -121,9 +122,8 @@ class Mechanism(object):
                                         "protection is one of (%s), the server is "
                                         "offering (%s), and %s supports (%s)" % (user, offered, self.name, supported))
         else:
-            self.qops = available_qops
             for qop in (QOP.AUTH_CONF, QOP.AUTH_INT, QOP.AUTH):
-                if qop in self.qops:
+                if qop in available_qops:
                     self.qop = qop
                     break
 
@@ -222,7 +222,7 @@ def bytes(text):
             return builtins.bytes(text)
         else:
             # Convert UTF-8 text to bytes
-            return builtins.bytes(text, encoding='utf-8')
+            return builtins.bytes(six.text_type(text), encoding='utf-8')
 
 
 def quote(text):
