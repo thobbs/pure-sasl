@@ -24,6 +24,7 @@ from puresasl.mechanisms import AnonymousMechanism, PlainMechanism, GSSAPIMechan
 
 class _BaseMechanismTests(unittest.TestCase):
 
+    mechanism_class = AnonymousMechanism
     sasl_kwargs = {}
 
     def setUp(self):

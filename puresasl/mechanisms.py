@@ -53,6 +53,8 @@ class Mechanism(object):
 
     def __init__(self, sasl, **props):
         self.sasl = sasl
+        self.qops = [QOP.AUTH]
+        self.qop = QOP.AUTH
 
     def process(self, challenge=None):
         """
@@ -154,8 +156,6 @@ class PlainMechanism(Mechanism):
         self.identity = identity
         self.username = username
         self.password = password
-        self.qops = [b'auth']
-        self.qop = b'auth'
 
     def process(self, challenge=None):
         self._fetch_properties('username', 'password')
@@ -177,8 +177,6 @@ class CramMD5Mechanism(PlainMechanism):
         Mechanism.__init__(self, sasl)
         self.username = username
         self.password = password
-        self.qops = [b'auth']
-        self.qop = b'auth'
 
     def process(self, challenge=None):
         if challenge is None:
@@ -257,8 +255,6 @@ class DigestMD5Mechanism(Mechanism):
         self.username = username
         self.password = password
 
-        self.qops = [b'auth']
-        self.qop = b'auth'
 
         self._rspauth_okay = False
         self._digest_uri = None
@@ -277,13 +273,13 @@ class DigestMD5Mechanism(Mechanism):
         self.nc = 0
 
     def wrap(self, outgoing):
-        if self.qop == 'auth-int' or self.qop == 'auth-conf':
+        if self.qop != QOP.AUTH:
             raise Exception('{0} QoP not supported for DIGEST-MD5'.format(self.qop))
         else:
             return outgoing
 
     def unwrap(self, incoming):
-        if self.qop == 'auth-int' or self.qop == 'auth-conf':
+        if self.qop != QOP.AUTH:
             raise Exception('{0} QoP not supported for DIGEST-MD5'.format(self.qop))
         else:
             return incoming
@@ -451,6 +447,7 @@ class GSSAPIMechanism(Mechanism):
         self.service = self.sasl.service
         self.principal = principal
         self._fetch_properties('host', 'service')
+        self.qops = QOP.all
 
         krb_service = '@'.join((self.service, self.host))
         try:
