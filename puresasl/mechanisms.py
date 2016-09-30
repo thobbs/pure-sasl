@@ -4,7 +4,6 @@ import hmac
 import random
 import struct
 import sys
-import six
 
 from puresasl import SASLError, SASLProtocolException, QOP
 
@@ -197,7 +196,7 @@ class CramMD5Mechanism(PlainMechanism):
         self.password = None
 
 
-## functions used in DigestMD5 which were originally defined in the now-removed util module
+# functions used in DigestMD5 which were originally defined in the now-removed util module
 
 def bytes(text):
     """
@@ -222,7 +221,7 @@ def bytes(text):
             return builtins.bytes(text)
         else:
             # Convert UTF-8 text to bytes
-            return builtins.bytes(six.text_type(text), encoding='utf-8')
+            return builtins.bytes(str(text), encoding='utf-8')
 
 
 def quote(text):
@@ -290,8 +289,8 @@ class DigestMD5Mechanism(Mechanism):
         self.nc += 1
         resp['nc'] = bytes('%08x' % self.nc)
 
-        self._digest_uri = bytes(self.sasl.service) + b'/' + \
-                                                        bytes(self.sasl.host)
+        self._digest_uri = (
+            bytes(self.sasl.service) + b'/' + bytes(self.sasl.host))
         resp['digest-uri'] = quote(self._digest_uri)
 
         a2 = b'AUTHENTICATE:' + self._digest_uri
@@ -412,7 +411,7 @@ class DigestMD5Mechanism(Mechanism):
 
         if 'maxbuf' in challenge_dict:
             self.max_buffer = min(
-                    self.sasl.max_buffer, int(challenge_dict['maxbuf']))
+                self.sasl.max_buffer, int(challenge_dict['maxbuf']))
 
         return self.response()
 
