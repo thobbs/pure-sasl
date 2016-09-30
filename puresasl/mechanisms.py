@@ -114,11 +114,12 @@ class Mechanism(object):
         supported_qops = set(self.qops)
         available_qops = user_qops & supported_qops & server_qop_set
         if not available_qops:
-            configured = b', '.join(configured_qops).decode('ascii')
+            user = b', '.join(user_qops).decode('ascii')
+            supported = b', '.join(supported_qops).decode('ascii')
             offered = b', '.join(server_qop_set).decode('ascii')
             raise SASLProtocolException("Your requested quality of "
-                                        "protection is one of (%s), but the server is only "
-                                        "offering (%s)" % (configured, offered))
+                                        "protection is one of (%s), the server is "
+                                        "offering (%s), and %s supports (%s)" % (user, offered, self.name, supported))
         else:
             self.qops = available_qops
             for qop in (QOP.AUTH_CONF, QOP.AUTH_INT, QOP.AUTH):

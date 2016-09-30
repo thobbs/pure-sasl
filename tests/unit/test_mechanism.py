@@ -48,6 +48,10 @@ class _BaseMechanismTests(unittest.TestCase):
         self.assertRaises(NotImplementedError, self.sasl.wrap, 'msg')
         self.assertRaises(NotImplementedError, self.sasl.unwrap, 'msg')
 
+    def test__pick_qop(self):
+        self.assertRaises(SASLProtocolException, self.sasl._chosen_mech._pick_qop, set())
+        self.sasl._chosen_mech._pick_qop(set(QOP.all))
+
 
 class AnonymousMechanismTest(_BaseMechanismTests):
 
@@ -195,5 +199,7 @@ class DigestMD5MechanismTest(_BaseMechanismTests):
         )
         self.sasl.process(testChallenge)
 
-    def test_qop(self):
+    def test__pick_qop(self):
+        # _pick_qop is called by process for DigestMD5
+        # assert that it chose the only supported mech
         self.assertEqual(self.sasl.qop, QOP.AUTH)
