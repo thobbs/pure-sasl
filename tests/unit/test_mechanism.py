@@ -171,7 +171,28 @@ class CramMD5Mechanism(_BaseMechanismTests):
         self.assertIs(self.sasl.unwrap(msg), msg)
 
 
-class DigestMD5MechanismTest(unittest.TestCase):
+class DigestMD5MechanismTest(_BaseMechanismTests):
 
-    def test_not_implemented(self):
-        self.assertRaises(NotImplementedError, SASLClient, 'localhost', mechanism=DigestMD5Mechanism.name)
+    mechanism_class = DigestMD5Mechanism
+    username = 'user'
+    password = 'pass'
+    sasl_kwargs = {'username': username, 'password': password}
+
+    def test_wrap_unwrap(self):
+        msg = 'msg'
+        self.assertIs(self.sasl.wrap(msg), msg)
+        self.assertIs(self.sasl.unwrap(msg), msg)
+
+    def test_process_basic(self, *args):
+        pass
+
+    def test_process(self):
+        testChallenge = (
+            'nonce="rmD6R8aMYVWH+/ih9HGBr3xNGAR6o2DUxpKlgDz6gUQ=",r'
+            'ealm="example.org",qop="auth,auth-int,auth-conf",cipher="rc4-40,rc'
+            '4-56,rc4,des,3des",maxbuf=65536,charset=utf-8,algorithm=md5-sess'
+        )
+        self.sasl.process(testChallenge)
+
+    def test_qop(self):
+        self.assertEqual(self.sasl.qop, 'auth')
