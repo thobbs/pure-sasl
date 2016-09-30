@@ -196,4 +196,4 @@ class DigestMD5MechanismTest(_BaseMechanismTests):
         self.sasl.process(testChallenge)
 
     def test_qop(self):
-        self.assertEqual(self.sasl.qop, 'auth')
+        self.assertEqual(self.sasl.qop, QOP.AUTH)

@@ -51,10 +51,14 @@ class Mechanism(object):
     dictionary_safe = False
     """ True if the mechanism is safe against passive dictionary attacks. """
 
+    qops = [QOP.AUTH]
+    """ QOPs supported by the Mechanism """
+
+    qop = QOP.AUTH
+    """ Selected QOP """
+
     def __init__(self, sasl, **props):
         self.sasl = sasl
-        self.qops = [QOP.AUTH]
-        self.qop = QOP.AUTH
 
     def process(self, challenge=None):
         """
@@ -103,11 +107,12 @@ class Mechanism(object):
 
     def _pick_qop(self, server_qop_set):
         """
-        Choose a quality of protection based on the user's requirements and
-        what the server supports.
+        Choose a quality of protection based on the user's requirements,
+        what the server supports, and what the mechanism supports.
         """
-        configured_qops = set(_b(qop) if isinstance(qop, str) else qop for qop in self.qops)  # normalize user-defined config
-        available_qops = configured_qops & server_qop_set
+        user_qops = set(_b(qop) if isinstance(qop, str) else qop for qop in self.sasl.qops)  # normalize user-defined config
+        supported_qops = set(self.qops)
+        available_qops = user_qops & supported_qops & server_qop_set
         if not available_qops:
             configured = b', '.join(configured_qops).decode('ascii')
             offered = b', '.join(server_qop_set).decode('ascii')
@@ -190,18 +195,6 @@ class CramMD5Mechanism(PlainMechanism):
     def dispose(self):
         self.password = None
 
-    def wrap(self, outgoing):
-        if self.qop == 'auth-int' or self.qop == 'auth-conf':
-            raise Exception('{0} QoP not supported for CRAM-MD5'.format(self.qop))
-        else:
-            return outgoing
-
-    def unwrap(self, incoming):
-        if self.qop == 'auth-int' or self.qop == 'auth-conf':
-            raise Exception('{0} QoP not supported for CRAM-MD5'.format(self.qop))
-        else:
-            return incoming
-
 
 ## functions used in DigestMD5 which were originally defined in the now-removed util module
 
@@ -241,7 +234,6 @@ def quote(text):
     return b'"' + text.replace(b'\\', b'\\\\').replace(b'"', b'\\"') + b'"'
 
 
-# TODO: incomplete, not tested
 class DigestMD5Mechanism(Mechanism):
 
     name = "DIGEST-MD5"
@@ -254,7 +246,6 @@ class DigestMD5Mechanism(Mechanism):
         Mechanism.__init__(self, sasl)
         self.username = username
         self.password = password
-
 
         self._rspauth_okay = False
         self._digest_uri = None
@@ -273,16 +264,10 @@ class DigestMD5Mechanism(Mechanism):
         self.nc = 0
 
     def wrap(self, outgoing):
-        if self.qop != QOP.AUTH:
-            raise Exception('{0} QoP not supported for DIGEST-MD5'.format(self.qop))
-        else:
-            return outgoing
+        return outgoing
 
     def unwrap(self, incoming):
-        if self.qop != QOP.AUTH:
-            raise Exception('{0} QoP not supported for DIGEST-MD5'.format(self.qop))
-        else:
-            return incoming
+        return incoming
 
     def response(self):
         required_props = ['username']
@@ -434,6 +419,7 @@ class DigestMD5Mechanism(Mechanism):
 class GSSAPIMechanism(Mechanism):
     name = 'GSSAPI'
     score = 100
+    qops = QOP.all
 
     allows_anonymous = False
     uses_plaintext = False
@@ -447,7 +433,6 @@ class GSSAPIMechanism(Mechanism):
         self.service = self.sasl.service
         self.principal = principal
         self._fetch_properties('host', 'service')
-        self.qops = QOP.all
 
         krb_service = '@'.join((self.service, self.host))
         try:
