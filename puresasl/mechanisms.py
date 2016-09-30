@@ -104,7 +104,7 @@ class Mechanism(object):
         Choose a quality of protection based on the user's requirements and
         what the server supports.
         """
-        configured_qops = set(_b(qop) if isinstance(qop, str) else qop for qop in self.sasl.qops)  # normalize user-defined config
+        configured_qops = set(_b(qop) if isinstance(qop, str) else qop for qop in self.qops)  # normalize user-defined config
         available_qops = configured_qops & server_qop_set
         if not available_qops:
             configured = b', '.join(configured_qops).decode('ascii')
