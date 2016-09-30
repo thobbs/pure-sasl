@@ -1,8 +1,10 @@
 import base64
 import hashlib
 import hmac
+import random
 import struct
 import sys
+import six
 
 from puresasl import SASLError, SASLProtocolException, QOP
 
@@ -49,6 +51,12 @@ class Mechanism(object):
 
     dictionary_safe = False
     """ True if the mechanism is safe against passive dictionary attacks. """
+
+    qops = [QOP.AUTH]
+    """ QOPs supported by the Mechanism """
+
+    qop = QOP.AUTH
+    """ Selected QOP """
 
     def __init__(self, sasl, **props):
         self.sasl = sasl
@@ -100,21 +108,22 @@ class Mechanism(object):
 
     def _pick_qop(self, server_qop_set):
         """
-        Choose a quality of protection based on the user's requirements and
-        what the server supports.
+        Choose a quality of protection based on the user's requirements,
+        what the server supports, and what the mechanism supports.
         """
-        configured_qops = set(_b(qop) if isinstance(qop, str) else qop for qop in self.sasl.qops)  # normalize user-defined config
-        available_qops = configured_qops & server_qop_set
+        user_qops = set(_b(qop) if isinstance(qop, str) else qop for qop in self.sasl.qops)  # normalize user-defined config
+        supported_qops = set(self.qops)
+        available_qops = user_qops & supported_qops & server_qop_set
         if not available_qops:
-            configured = b', '.join(configured_qops).decode('ascii')
+            user = b', '.join(user_qops).decode('ascii')
+            supported = b', '.join(supported_qops).decode('ascii')
             offered = b', '.join(server_qop_set).decode('ascii')
             raise SASLProtocolException("Your requested quality of "
-                                        "protection is one of (%s), but the server is only "
-                                        "offering (%s)" % (configured, offered))
+                                        "protection is one of (%s), the server is "
+                                        "offering (%s), and %s supports (%s)" % (user, offered, self.name, supported))
         else:
-            self.qops = available_qops
             for qop in (QOP.AUTH_CONF, QOP.AUTH_INT, QOP.AUTH):
-                if qop in self.qops:
+                if qop in available_qops:
                     self.qop = qop
                     break
 
@@ -188,7 +197,44 @@ class CramMD5Mechanism(PlainMechanism):
         self.password = None
 
 
-# TODO: incomplete, not tested
+## functions used in DigestMD5 which were originally defined in the now-removed util module
+
+def bytes(text):
+    """
+    Convert Unicode text to UTF-8 encoded bytes.
+
+    Since Python 2.6+ and Python 3+ have similar but incompatible
+    signatures, this function unifies the two to keep code sane.
+
+    :param text: Unicode text to convert to bytes
+    :rtype: bytes (Python3), str (Python2.6+)
+    """
+    if sys.version_info < (3, 0):
+        import __builtin__
+        return __builtin__.bytes(text)
+    else:
+        import builtins
+        if isinstance(text, builtins.bytes):
+            # We already have bytes, so do nothing
+            return text
+        if isinstance(text, list):
+            # Convert a list of integers to bytes
+            return builtins.bytes(text)
+        else:
+            # Convert UTF-8 text to bytes
+            return builtins.bytes(six.text_type(text), encoding='utf-8')
+
+
+def quote(text):
+    """
+    Enclose in quotes and escape internal slashes and double quotes.
+
+    :param text: A Unicode or byte string.
+    """
+    text = bytes(text)
+    return b'"' + text.replace(b'\\', b'\\\\').replace(b'"', b'\\"') + b'"'
+
+
 class DigestMD5Mechanism(Mechanism):
 
     name = "DIGEST-MD5"
@@ -197,16 +243,184 @@ class DigestMD5Mechanism(Mechanism):
     allows_anonymous = False
     uses_plaintext = False
 
-    enc_magic = 'Digest session key to client-to-server signing key magic'
-    dec_magic = 'Digest session key to server-to-client signing key magic'
-
     def __init__(self, sasl, username=None, password=None, **props):
-        raise NotImplementedError("Digest MD5 mechanism is not yet supported")
+        Mechanism.__init__(self, sasl)
+        self.username = username
+        self.password = password
+
+        self._rspauth_okay = False
+        self._digest_uri = None
+        self._a1 = None
+
+    def dispose(self):
+        self._rspauth_okay = None
+        self._digest_uri = None
+        self._a1 = None
+
+        self.password = None
+        self.key_hash = None
+        self.realm = None
+        self.nonce = None
+        self.cnonce = None
+        self.nc = 0
+
+    def wrap(self, outgoing):
+        return outgoing
+
+    def unwrap(self, incoming):
+        return incoming
+
+    def response(self):
+        required_props = ['username']
+        if not getattr(self, 'key_hash', None):
+            required_props.append('password')
+        self._fetch_properties(*required_props)
+
+        resp = {}
+        resp['qop'] = self.qop
+
+        if getattr(self, 'realm', None) is not None:
+            resp['realm'] = quote(self.realm)
+
+        resp['username'] = quote(bytes(self.username))
+        resp['nonce'] = quote(self.nonce)
+        if self.nc == 0:
+            self.cnonce = bytes('%s' % random.random())[2:]
+        resp['cnonce'] = quote(self.cnonce)
+        self.nc += 1
+        resp['nc'] = bytes('%08x' % self.nc)
+
+        self._digest_uri = bytes(self.sasl.service) + b'/' + \
+                                                        bytes(self.sasl.host)
+        resp['digest-uri'] = quote(self._digest_uri)
+
+        a2 = b'AUTHENTICATE:' + self._digest_uri
+        if self.qop != b'auth':
+            a2 += b':00000000000000000000000000000000'
+            resp['maxbuf'] = b'16777215'  # 2**24-1
+        resp['response'] = self.gen_hash(a2)
+        return b','.join([bytes(k) + b'=' + bytes(v) for k, v in resp.items()])
+
+    @staticmethod
+    def parse_challenge(challenge):
+        ret = {}
+        var = ''
+        val = ''
+        in_var = True
+        in_quotes = False
+        new = False
+        escaped = False
+        for c in challenge:
+            if in_var:
+                if c.isspace():
+                    continue
+                if c == '=':
+                    in_var = False
+                    new = True
+                else:
+                    var += c
+            else:
+                if new:
+                    if c == '"':
+                        in_quotes = True
+                    else:
+                        val += c
+                    new = False
+                elif in_quotes:
+                    if escaped:
+                        escaped = False
+                        val += c
+                    else:
+                        if c == '\\':
+                            escaped = True
+                        elif c == '"':
+                            in_quotes = False
+                        else:
+                            val += c
+                else:
+                    if c == ',':
+                        if var:
+                            ret[var] = bytes(val)
+                        var = ''
+                        val = ''
+                        in_var = True
+                    else:
+                        val += c
+        if var:
+            ret[var] = val
+        return ret
+
+    def gen_hash(self, a2):
+        if not getattr(self, 'key_hash', None):
+            key_hash = hashlib.md5()
+            user = bytes(self.username)
+            password = bytes(self.password)
+            realm = bytes(self.realm)
+            kh = user + b':' + realm + b':' + password
+            key_hash.update(kh)
+            self.key_hash = key_hash.digest()
+
+        a1 = hashlib.md5(self.key_hash)
+        a1h = b':' + self.nonce + b':' + self.cnonce
+        a1.update(a1h)
+        response = hashlib.md5()
+        self._a1 = a1.digest()
+        rv = bytes(a1.hexdigest().lower())
+        rv += b':' + self.nonce
+        rv += b':' + bytes('%08x' % self.nc)
+        rv += b':' + self.cnonce
+        rv += b':' + self.qop
+        rv += b':' + bytes(hashlib.md5(a2).hexdigest().lower())
+        response.update(rv)
+        return bytes(response.hexdigest().lower())
+
+    # untested
+    def authenticate_server(self, cmp_hash):
+        a2 = b':' + self._digest_uri
+        if self.qop != b'auth':
+            a2 += b':00000000000000000000000000000000'
+        if self.gen_hash(a2) == cmp_hash:
+            self._rspauth_okay = True
+
+    def process(self, challenge=None):
+        if challenge is None:
+            needed = ['username', 'realm', 'nonce', 'key_hash',
+                      'nc', 'cnonce', 'qops']
+            if all(getattr(self, p, None) is not None for p in needed):
+                return self.response()
+            else:
+                return None
+
+        challenge_dict = DigestMD5Mechanism.parse_challenge(challenge)
+        if self.sasl.mutual_auth and 'rspauth' in challenge_dict:
+            self.authenticate_server(challenge_dict['rspauth'])
+
+        if 'realm' not in challenge_dict:
+            self._fetch_properties('realm')
+            challenge_dict['realm'] = self.realm
+
+        for key in ('nonce', 'realm'):
+            if key in challenge_dict:
+                setattr(self, key, challenge_dict[key])
+
+        self.nc = 0
+        if 'qop' in challenge_dict:
+            server_offered_qops = [x.strip() for x in challenge_dict['qop'].split(b',')]
+        else:
+            server_offered_qops = ['auth']
+        self._pick_qop(set(server_offered_qops))
+
+        if 'maxbuf' in challenge_dict:
+            self.max_buffer = min(
+                    self.sasl.max_buffer, int(challenge_dict['maxbuf']))
+
+        return self.response()
 
 
 class GSSAPIMechanism(Mechanism):
     name = 'GSSAPI'
     score = 100
+    qops = QOP.all
 
     allows_anonymous = False
     uses_plaintext = False

@@ -175,6 +175,11 @@ class SASLClient(object):
         """
         self._chosen_mech.dispose()
 
+    @property
+    @_require_mech
+    def qop(self):
+        return self._chosen_mech.qop
+
     def choose_mechanism(self, mechanism_choices, allow_anonymous=True,
                          allow_plaintext=True, allow_active=True,
                          allow_dictionary=True):
