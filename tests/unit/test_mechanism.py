@@ -48,7 +48,7 @@ class _BaseMechanismTests(unittest.TestCase):
         self.assertRaises(NotImplementedError, self.sasl.wrap, 'msg')
         self.assertRaises(NotImplementedError, self.sasl.unwrap, 'msg')
 
-    def test__pick_qop(self):
+    def test__pick_qop(self, *args):
         self.assertRaises(SASLProtocolException, self.sasl._chosen_mech._pick_qop, set())
         self.sasl._chosen_mech._pick_qop(set(QOP.all))
 
