@@ -154,6 +154,8 @@ class PlainMechanism(Mechanism):
         self.identity = identity
         self.username = username
         self.password = password
+        self.qops = [b'auth']
+        self.qop = b'auth'
 
     def process(self, challenge=None):
         self._fetch_properties('username', 'password')
@@ -175,6 +177,8 @@ class CramMD5Mechanism(PlainMechanism):
         Mechanism.__init__(self, sasl)
         self.username = username
         self.password = password
+        self.qops = [b'auth']
+        self.qop = b'auth'
 
     def process(self, challenge=None):
         if challenge is None:
@@ -187,6 +191,18 @@ class CramMD5Mechanism(PlainMechanism):
 
     def dispose(self):
         self.password = None
+
+    def wrap(self, outgoing):
+        if self.qop == 'auth-int' or self.qop == 'auth-conf':
+            raise Exception('{0} QoP not supported for CRAM-MD5'.format(self.qop))
+        else:
+            return outgoing
+
+    def unwrap(self, incoming):
+        if self.qop == 'auth-int' or self.qop == 'auth-conf':
+            raise Exception('{0} QoP not supported for CRAM-MD5'.format(self.qop))
+        else:
+            return incoming
 
 
 ## functions used in DigestMD5 which were originally defined in the now-removed util module
@@ -227,35 +243,6 @@ def quote(text):
     return b'"' + text.replace(b'\\', b'\\\\').replace(b'"', b'\\"') + b'"'
 
 
-def num_to_bytes(num):
-    """
-    Convert an integer into a four byte sequence.
-
-    :param integer num: An integer to convert to its byte representation.
-    """
-    #bval = b''
-    #bval += bytes(chr(0xFF & (num >> 24)))
-    #bval += bytes(chr(0xFF & (num >> 16)))
-    #bval += bytes(chr(0xFF & (num >> 8)))
-    #bval += bytes(chr(0xFF & (num >> 0)))
-    #return bval
-    return struct.pack('<L', num)
-
-
-def bytes_to_num(bval):
-    """
-    Convert a four byte sequence to an integer.
-
-    :param bytes bval: A four byte sequence to turn into an integer.
-    """
-    #num = 0
-    #num += ord(bval[0] << 24)
-    #num += ord(bval[1] << 16)
-    #num += ord(bval[2] << 8)
-    #num += ord(bval[3])
-    #return num
-    return struct.unpack('<L', bval)[0]
-
 # TODO: incomplete, not tested
 class DigestMD5Mechanism(Mechanism):
 
@@ -265,43 +252,22 @@ class DigestMD5Mechanism(Mechanism):
     allows_anonymous = False
     uses_plaintext = False
 
-    Kic_magic = 'Digest session key to client-to-server signing key magic constant'
-    Kis_magic = 'Digest session key to server-to-client signing key magic constant'
-
-    Kcc_magic = 'Digest H(A1) to client-to-server sealing key magic constant'
-    Kcs_magic = 'Digest H(A1) to server-to-client sealing key magic constant'
-
     def __init__(self, sasl, username=None, password=None, **props):
         Mechanism.__init__(self, sasl)
         self.username = username
         self.password = password
 
-        self.qops = self.sasl.qops
+        self.qops = [b'auth']
         self.qop = b'auth'
-        self.max_buffer = self.sasl.max_buffer
 
         self._rspauth_okay = False
         self._digest_uri = None
         self._a1 = None
-        self._enc_buf = b''
-        self._enc_key = None
-        self._enc_seq = 0
-        self._dec_buf = b''
-        self._dec_key = None
-        self._dec_seq = 0
-        self._Kic = None
-        self._Kis = None
 
     def dispose(self):
         self._rspauth_okay = None
         self._digest_uri = None
         self._a1 = None
-        self._enc_buf = b''
-        self._enc_key = None
-        self._enc_seq = 0
-        self._dec_buf = b''
-        self._dec_key = None
-        self._dec_seq = 0
 
         self.password = None
         self.key_hash = None
@@ -310,63 +276,15 @@ class DigestMD5Mechanism(Mechanism):
         self.cnonce = None
         self.nc = 0
 
-        self._Kic = None
-        self._Kis = None
-
-    def _MAC(self, seq, msg, key):
-        #mac = hmac.HMAC(key=key, digestmod=hashlib.md5)
-        mac = hmac.new(key)
-        seqnum = num_to_bytes(seq)
-        mac.update(seqnum)
-        mac.update(msg)
-        return mac.digest()[:10] + b'\x00\x01' + seqnum
-
     def wrap(self, outgoing):
-        if self.qop == 'auth-int':
-            result = b''
-            # Leave buffer space for the MAC
-            mbuf = self.max_buffer - 10 - 2 - 4
-
-            while outgoing:
-                msg = outgoing[:mbuf]
-                mac = self._MAC(self._enc_seq, msg, self._Kic)
-                self._enc_seq += 1
-                msg += mac
-                result += num_to_bytes(len(msg)) + msg
-                outgoing = outgoing[mbuf:]
-
-            return result
-        elif self.qop == 'auth-conf':
-            raise NotImplementedError('auth-conf QoP not yet implemented for DIGEST-MD5')
+        if self.qop == 'auth-int' or self.qop == 'auth-conf':
+            raise Exception('{0} QoP not supported for DIGEST-MD5'.format(self.qop))
         else:
             return outgoing
 
     def unwrap(self, incoming):
-        if self.qop == 'auth-int':
-            incoming = b'' + incoming
-            result = b''
-
-            while len(incoming) > 4:
-                num = bytes_to_num(incoming[0:4])
-                if len(incoming) < (num + 4):
-                    return result
-
-                mac = incoming[4:4 + num]
-                incoming = incoming[4 + num:]
-                msg = mac[:-16]
-
-                mac_conf = self._MAC(self._dec_seq, msg, self._Kis)
-                if mac[-16:] != mac_conf:
-                    #self._dec_seq = None
-                    #return result
-                    raise Exception('Integrity check failed')
-
-                self._dec_seq += 1
-                result += msg
-
-            return result
-        elif self.qop == 'auth-conf':
-            raise NotImplementedError('auth-conf QoP not yet implemented for DIGEST-MD5')
+        if self.qop == 'auth-int' or self.qop == 'auth-conf':
+            raise Exception('{0} QoP not supported for DIGEST-MD5'.format(self.qop))
         else:
             return incoming
 
@@ -411,8 +329,6 @@ class DigestMD5Mechanism(Mechanism):
         new = False
         escaped = False
         for c in challenge:
-            #if sys.version_info >= (3, 0):
-            #    c = bytes([c])
             if in_var:
                 if c.isspace():
                     continue
@@ -467,8 +383,6 @@ class DigestMD5Mechanism(Mechanism):
         a1.update(a1h)
         response = hashlib.md5()
         self._a1 = a1.digest()
-        self._Kic = hashlib.md5(self._a1 + bytes(self.Kic_magic)).digest()
-        self._Kis = hashlib.md5(self._a1 + bytes(self.Kis_magic)).digest()
         rv = bytes(a1.hexdigest().lower())
         rv += b':' + self.nonce
         rv += b':' + bytes('%08x' % self.nc)
@@ -478,6 +392,7 @@ class DigestMD5Mechanism(Mechanism):
         response.update(rv)
         return bytes(response.hexdigest().lower())
 
+    # untested
     def authenticate_server(self, cmp_hash):
         a2 = b':' + self._digest_uri
         if self.qop != b'auth':
@@ -497,40 +412,27 @@ class DigestMD5Mechanism(Mechanism):
         challenge_dict = DigestMD5Mechanism.parse_challenge(challenge)
         if self.sasl.mutual_auth and 'rspauth' in challenge_dict:
             self.authenticate_server(challenge_dict['rspauth'])
+
+        if 'realm' not in challenge_dict:
+            self._fetch_properties('realm')
+            challenge_dict['realm'] = self.realm
+
+        for key in ('nonce', 'realm'):
+            if key in challenge_dict:
+                setattr(self, key, challenge_dict[key])
+
+        self.nc = 0
+        if 'qop' in challenge_dict:
+            server_offered_qops = [x.strip() for x in challenge_dict['qop'].split(b',')]
         else:
-            if 'realm' not in challenge_dict:
-                self._fetch_properties('realm')
-                challenge_dict['realm'] = self.realm
+            server_offered_qops = ['auth']
+        self._pick_qop(set(server_offered_qops))
 
-            for key in ('nonce', 'realm'):
-                if key in challenge_dict:
-                    setattr(self, key, challenge_dict[key])
+        if 'maxbuf' in challenge_dict:
+            self.max_buffer = min(
+                    self.sasl.max_buffer, int(challenge_dict['maxbuf']))
 
-            self.nc = 0
-            if 'qop' in challenge_dict:
-                server_offered_qops = [x.strip() for x in challenge_dict['qop'].split(b',')]
-            else:
-                server_offered_qops = ['auth']
-            self._pick_qop(set(server_offered_qops))
-
-            if 'maxbuf' in challenge_dict:
-                self.max_buffer = min(
-                        self.sasl.max_buffer, int(challenge_dict['maxbuf']))
-
-            return self.response()
-
-    @property
-    def complete(self):
-        """
-        """
-        if not self.sasl.mutual_auth:
-            return True
-
-        if self._rspauth_okay and self.qop == b'auth-int':
-            self._enc_key = hashlib.md5(self._a1 + self.enc_magic).digest()
-            self._dec_key = hashlib.md5(self._a1 + self.dec_magic).digest()
-            self.encoding = True
-        return self._rspauth_okay
+        return self.response()
 
 
 class GSSAPIMechanism(Mechanism):
