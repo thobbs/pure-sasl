@@ -68,7 +68,7 @@ class PlainTextMechanismTest(_BaseMechanismTests):
     def test_process(self):
         for challenge in (None, '', b'asdf', u"\U0001F44D"):
             response = self.sasl.process(challenge)
-            self.assertEqual(response, b'\x00%s\x00%s' % (six.b(self.username), six.b(self.password)))
+            self.assertEqual(response, six.b('\x00{0}\x00{1}'.format(self.username, self.password)))
             self.assertIsInstance(response, six.binary_type)
 
     def test_process_with_authorization_id_or_identity(self):
@@ -80,7 +80,7 @@ class PlainTextMechanismTest(_BaseMechanismTests):
         sasl_kwargs.update({'identity': identity})
         sasl = SASLClient('localhost', mechanism=self.mechanism_class.name, **sasl_kwargs)
         response = sasl.process(challenge)
-        self.assertEqual(response, b'%s\x00%s\x00%s' % (six.b(identity), six.b(self.username), six.b(self.password)))
+        self.assertEqual(response, six.b('{0}\x00{1}\x00{2}'.format(identity, self.username, self.password)))
         self.assertIsInstance(response, six.binary_type)
 
         # Test that the sasl authorization_id has priority over identity
