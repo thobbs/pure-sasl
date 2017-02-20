@@ -88,7 +88,7 @@ class PlainTextMechanismTest(_BaseMechanismTests):
         sasl_kwargs.update({'authorization_id': auth_id})
         sasl = SASLClient('localhost', mechanism=self.mechanism_class.name, **sasl_kwargs)
         response = sasl.process(challenge)
-        self.assertEqual(response, b'%s\x00%s\x00%s' % (six.b(auth_id), six.b(self.username), six.b(self.password)))
+        self.assertEqual(response, six.b('{0}\x00{1}\x00{2}'.format(auth_id, self.username, self.password)))
         self.assertIsInstance(response, six.binary_type)
 
     def test_wrap_unwrap(self):
