@@ -68,9 +68,28 @@ class PlainTextMechanismTest(_BaseMechanismTests):
     def test_process(self):
         for challenge in (None, '', b'asdf', u"\U0001F44D"):
             response = self.sasl.process(challenge)
-            self.assertIn(six.b(self.username), response)
-            self.assertIn(six.b(self.password), response)
+            self.assertEqual(response, b'\x00%s\x00%s' % (six.b(self.username), six.b(self.password)))
             self.assertIsInstance(response, six.binary_type)
+
+    def test_process_with_authorization_id_or_identity(self):
+        challenge = u"\U0001F44D"
+        identity = 'user2'
+
+        # Test that we can pass an identity
+        sasl_kwargs = self.sasl_kwargs.copy()
+        sasl_kwargs.update({'identity': identity})
+        sasl = SASLClient('localhost', mechanism=self.mechanism_class.name, **sasl_kwargs)
+        response = sasl.process(challenge)
+        self.assertEqual(response, b'%s\x00%s\x00%s' % (six.b(identity), six.b(self.username), six.b(self.password)))
+        self.assertIsInstance(response, six.binary_type)
+
+        # Test that the sasl authorization_id has priority over identity
+        auth_id = 'user3'
+        sasl_kwargs.update({'authorization_id': auth_id})
+        sasl = SASLClient('localhost', mechanism=self.mechanism_class.name, **sasl_kwargs)
+        response = sasl.process(challenge)
+        self.assertEqual(response, b'%s\x00%s\x00%s' % (six.b(auth_id), six.b(self.username), six.b(self.password)))
+        self.assertIsInstance(response, six.binary_type)
 
     def test_wrap_unwrap(self):
         msg = 'msg'

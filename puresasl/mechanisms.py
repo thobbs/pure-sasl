@@ -165,7 +165,8 @@ class PlainMechanism(Mechanism):
     def process(self, challenge=None):
         self._fetch_properties('username', 'password')
         self.complete = True
-        return b''.join((_b(self.identity), b'\x00', _b(self.username), b'\x00', _b(self.password)))
+        auth_id = self.sasl.authorization_id or self.identity
+        return b''.join((_b(auth_id), b'\x00', _b(self.username), b'\x00', _b(self.password)))
 
     def dispose(self):
         self.password = None
@@ -485,10 +486,11 @@ class GSSAPIMechanism(Mechanism):
         the rest of the buffer: the authorization user name in UTF-8 -
             not null terminated.
         """
-        l = len(self.user)
+        auth_id = self.sasl.authorization_id or self.user
+        l = len(auth_id)
         fmt = '!I' + str(l) + 's'
         word = QOP.flag_from_name(self.qop) << 24 | self.max_buffer
-        out = struct.pack(fmt, word, _b(self.user),)
+        out = struct.pack(fmt, word, _b(auth_id),)
 
         encoded = base64.b64encode(out).decode('ascii')
 
