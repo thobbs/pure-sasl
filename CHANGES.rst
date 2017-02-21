@@ -1,3 +1,9 @@
+0.4.0
+=====
+February 21st, 2017
+
+* Add support for authorization_id to PlainMechanism and GSSAPIMechanism
+
 0.3.0
 =====
 September 30th, 2016
