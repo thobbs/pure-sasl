@@ -6,7 +6,7 @@ pure-sasl
 
 pure-sasl is a pure python client-side SASL implementation.
 
-At the moment, it supports the following mechanisms: ANONYMOUS, PLAIN,
+At the moment, it supports the following mechanisms: ANONYMOUS, PLAIN, EXTERNAL
 CRAM-MD5, DIGEST-MD5, and GSSAPI. Support for other mechanisms may be added in the
 future. Only GSSAPI supports a QOP higher than auth. Always use TLS!
 

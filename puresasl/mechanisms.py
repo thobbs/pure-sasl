@@ -172,6 +172,25 @@ class PlainMechanism(Mechanism):
         self.password = None
 
 
+class ExternalMechanism(Mechanism):
+    """
+    The EXTERNAL mechanism allows a client to request the server to use
+    credentials established by means external to the mechanism to
+    authenticate the client.
+    """
+    name = 'EXTERNAL'
+    score = 10
+
+    def wrap(self, outgoing):
+        return outgoing
+
+    def unwrap(self, incoming):
+        return incoming
+
+    def process(self, challenge=None):
+        return b''
+
+
 class CramMD5Mechanism(PlainMechanism):
     name = "CRAM-MD5"
     score = 20
@@ -530,6 +549,7 @@ class GSSAPIMechanism(Mechanism):
 mechanisms = dict((m.name, m) for m in (
     AnonymousMechanism,
     PlainMechanism,
+    ExternalMechanism,
     CramMD5Mechanism,
     DigestMD5Mechanism))
 
