@@ -110,17 +110,17 @@ if _have_kerberos:
         @patch('puresasl.mechanisms.kerberos.authGSSClientUnwrap')
         def test_wrap_unwrap(self, _inner1, _inner2, authGSSClientResponse, *args):
             # bypassing process setup by setting qop directly
-            self.mechanism.qop = 'auth'
+            self.mechanism.qop = b'auth'
             msg = b'msg'
             self.assertIs(self.sasl.wrap(msg), msg)
             self.assertIs(self.sasl.unwrap(msg), msg)
 
-            for qop in ('auth-int', 'auth-conf'):
+            for qop in (b'auth-int', b'auth-conf'):
                 self.mechanism.qop = qop
                 with patch('puresasl.mechanisms.kerberos.authGSSClientResponseConf', return_value=1):
                     self.assertEqual(self.sasl.wrap(msg), base64.b64decode(authGSSClientResponse.return_value))
                     self.assertEqual(self.sasl.unwrap(msg), base64.b64decode(authGSSClientResponse.return_value))
-                if qop == 'auth-conf':
+                if qop == b'auth-conf':
                     with patch('puresasl.mechanisms.kerberos.authGSSClientResponseConf', return_value=0):
                         self.assertRaises(Exception, self.sasl.unwrap, msg)
 
