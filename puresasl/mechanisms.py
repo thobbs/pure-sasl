@@ -9,9 +9,9 @@ from puresasl import SASLError, SASLProtocolException, QOP
 
 try:
     import kerberos
-    _have_kerberos = True
+    have_kerberos = True
 except ImportError:
-    _have_kerberos = False
+    have_kerberos = False
 
 PY3 = sys.version_info[0] == 3
 if PY3:
@@ -533,5 +533,5 @@ mechanisms = dict((m.name, m) for m in (
     CramMD5Mechanism,
     DigestMD5Mechanism))
 
-if _have_kerberos:
+if have_kerberos:
     mechanisms[GSSAPIMechanism.name] = GSSAPIMechanism

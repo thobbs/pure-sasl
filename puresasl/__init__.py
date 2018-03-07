@@ -19,6 +19,13 @@ class SASLProtocolException(Exception):
     pass
 
 
+class SASLWarning(Warning):
+    """
+    Emitted in potentially fatal circumstances.
+    """
+    pass
+
+
 class QOP(object):
 
     AUTH = b'auth'

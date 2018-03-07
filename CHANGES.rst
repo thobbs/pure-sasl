@@ -1,3 +1,12 @@
+0.4.1
+=====
+Release TBD
+
+* Fix QOP checks in python3
+* Improved error handling when the kerberos module is not installed
+* ...
+
+
 0.4.0
 =====
 February 21st, 2017

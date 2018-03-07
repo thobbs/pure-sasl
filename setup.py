@@ -9,6 +9,8 @@ setup(name='pure-sasl',
       version=puresasl.__version__,
       author='Tyler Hobbs',
       author_email='tylerlhobbs@gmail.com',
+      maintainer='Alex Shafer',
+      maintainer_email='ashafer01@gmail.com',
       description='Pure Python client SASL implementation',
       long_description=
 """This package provides a reasonably high-level SASL client written
