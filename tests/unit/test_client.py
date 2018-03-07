@@ -20,7 +20,7 @@ class SASLClientTest(unittest.TestCase):
         self.assertIs(sasl_client._chosen_mech.sasl, sasl_client)
 
         # invalid mech
-        self.assertRaises(KeyError, SASLClient, 'localhost', mechanism='WRONG')
+        self.assertRaises(SASLError, SASLClient, 'localhost', mechanism='WRONG')
 
     def test_chosen_mechanism(self):
         client = SASLClient('localhost', mechanism=PlainMechanism.name, username='user', password='pass')
