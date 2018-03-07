@@ -513,7 +513,7 @@ class GSSAPIMechanism(Mechanism):
 
     def unwrap(self, incoming):
         if self.qop != QOP.AUTH:
-            incoming = base64.b64encode(incoming)
+            incoming = base64.b64encode(incoming).decode('ascii')
             kerberos.authGSSClientUnwrap(self.context, incoming)
             conf = kerberos.authGSSClientResponseConf(self.context)
             if 0 == conf and self.qop == QOP.AUTH_CONF:

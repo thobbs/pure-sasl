@@ -4,7 +4,7 @@ Release TBD
 
 * Fix QOP checks in python3
 * Improved error handling when the kerberos module is not installed
-* ...
+* Fix python3 bug using auth-conf with GSSAPI (#21)
 
 
 0.4.0
