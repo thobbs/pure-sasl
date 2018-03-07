@@ -38,7 +38,7 @@ Example Usage
 
     # begin normal communication
     encoded = conn.fetch_data()
-    decoded = sasl.unwrap(decoded)
+    decoded = sasl.unwrap(encoded)
     response = process_data(decoded)
     conn.send_data(sasl.wrap(response))
 
