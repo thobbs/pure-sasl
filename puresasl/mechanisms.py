@@ -295,7 +295,7 @@ class DigestMD5Mechanism(Mechanism):
         resp['digest-uri'] = quote(self._digest_uri)
 
         a2 = b'AUTHENTICATE:' + self._digest_uri
-        if self.qop != b'auth':
+        if self.qop != QOP.AUTH:
             a2 += b':00000000000000000000000000000000'
             resp['maxbuf'] = b'16777215'  # 2**24-1
         resp['response'] = self.gen_hash(a2)
@@ -377,7 +377,7 @@ class DigestMD5Mechanism(Mechanism):
     # untested
     def authenticate_server(self, cmp_hash):
         a2 = b':' + self._digest_uri
-        if self.qop != b'auth':
+        if self.qop != QOP.AUTH:
             a2 += b':00000000000000000000000000000000'
         if self.gen_hash(a2) == cmp_hash:
             self._rspauth_okay = True
@@ -500,9 +500,9 @@ class GSSAPIMechanism(Mechanism):
         return base64.b64decode(response)
 
     def wrap(self, outgoing):
-        if self.qop != b'auth':
+        if self.qop != QOP.AUTH:
             outgoing = base64.b64encode(outgoing)
-            if self.qop == b'auth-conf':
+            if self.qop == QOP.AUTH_CONF:
                 protect = 1
             else:
                 protect = 0
@@ -512,11 +512,11 @@ class GSSAPIMechanism(Mechanism):
             return outgoing
 
     def unwrap(self, incoming):
-        if self.qop != b'auth':
+        if self.qop != QOP.AUTH:
             incoming = base64.b64encode(incoming)
             kerberos.authGSSClientUnwrap(self.context, incoming)
             conf = kerberos.authGSSClientResponseConf(self.context)
-            if 0 == conf and self.qop == b'auth-conf':
+            if 0 == conf and self.qop == QOP.AUTH_CONF:
                 raise Exception("Error: confidentiality requested, but not honored by the server.")
             return base64.b64decode(kerberos.authGSSClientResponse(self.context))
         else:
