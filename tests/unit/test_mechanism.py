@@ -14,7 +14,7 @@ import struct
 
 from puresasl import SASLProtocolException, QOP
 from puresasl.client import SASLClient
-from puresasl.mechanisms import AnonymousMechanism, PlainMechanism, GSSAPIMechanism, DigestMD5Mechanism, CramMD5Mechanism
+from puresasl.mechanisms import AnonymousMechanism, PlainMechanism, GSSAPIMechanism, DigestMD5Mechanism, CramMD5Mechanism, ExternalMechanism
 
 
 class _BaseMechanismTests(unittest.TestCase):
@@ -90,6 +90,20 @@ class PlainTextMechanismTest(_BaseMechanismTests):
         msg = 'msg'
         self.assertIs(self.sasl.wrap(msg), msg)
         self.assertIs(self.sasl.unwrap(msg), msg)
+
+
+class ExternalMechanismTest(_BaseMechanismTests):
+
+    mechanism_class = ExternalMechanism
+
+    def test_process(self):
+        self.assertIs(self.sasl.process(), b'')
+
+    def test_wrap_unwrap(self):
+        msg = 'msg'
+        self.assertIs(self.sasl.wrap(msg), msg)
+        self.assertIs(self.sasl.unwrap(msg), msg)
+
 
 @patch('puresasl.mechanisms.kerberos.authGSSClientStep')
 @patch('puresasl.mechanisms.kerberos.authGSSClientResponse', return_value=base64.b64encode(six.b('some\x00 response')))
