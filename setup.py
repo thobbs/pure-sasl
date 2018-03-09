@@ -9,6 +9,8 @@ setup(name='pure-sasl',
       version=puresasl.__version__,
       author='Tyler Hobbs',
       author_email='tylerlhobbs@gmail.com',
+      maintainer='Alex Shafer',
+      maintainer_email='ashafer01@gmail.com',
       description='Pure Python client SASL implementation',
       long_description=
 """This package provides a reasonably high-level SASL client written
@@ -19,6 +21,9 @@ provided.""",
       url='http://github.com/thobbs/pure-sasl',
       keywords='sasl',
       packages=['puresasl'],
+      extras_require={
+          'GSSAPI': ['kerberos>=1.3.0']
+      },
       classifiers=[
           'Development Status :: 4 - Beta',
           'Intended Audience :: Developers',
@@ -29,6 +34,8 @@ provided.""",
           'Programming Language :: Python :: 2.7',
           'Programming Language :: Python :: 3.3',
           'Programming Language :: Python :: 3.4',
+          'Programming Language :: Python :: 3.5',
+          'Programming Language :: Python :: 3.6',
           'Topic :: Software Development :: Libraries :: Python Modules'
       ]
     )

@@ -1,7 +1,8 @@
 from functools import wraps
+from warnings import warn
 
 import puresasl.mechanisms as mech_mod
-from puresasl import SASLError, QOP
+from puresasl import SASLError, QOP, SASLWarning
 
 
 def _require_mech(f):
@@ -64,7 +65,7 @@ class SASLClient(object):
         >>>
         >>> # begin normal communication
         >>> encoded = conn.fetch_data()
-        >>> decoded = sasl.unwrap(decoded)
+        >>> decoded = sasl.unwrap(encoded)
         >>> response = process_data(decoded)
         >>> conn.send_data(sasl.wrap(response))
     """
@@ -120,7 +121,15 @@ class SASLClient(object):
 
         self._mech_props = mechanism_props
         if self.mechanism is not None:
-            mech_class = mech_mod.mechanisms[mechanism]
+            try:
+                mech_class = mech_mod.mechanisms[mechanism]
+            except KeyError:
+                gssapi = mech_mod.GSSAPIMechanism.name
+                if mechanism == gssapi and not mech_mod.have_kerberos:
+                    raise SASLError('kerberos module not installed, {0} '
+                                    'unavailable'.format(gssapi))
+                else:
+                    raise SASLError('Unknown mechanism {0}'.format(mechanism))
             self._chosen_mech = mech_class(self, **self._mech_props)
         else:
             self._chosen_mech = None
@@ -201,6 +210,11 @@ class SASLClient(object):
         If `allow_dictionary` is ``False, mechanisms that are susceptible
         to passive dictionary attacks will not be considered.
         """
+        gssapi = mech_mod.GSSAPIMechanism.name
+        if gssapi in mechanism_choices and not mech_mod.have_kerberos:
+            warn('kerberos module not installed, {0} will be ignored'.format(
+                 gssapi), SASLWarning)
+
         candidates = [mech_mod.mechanisms[choice]
                       for choice in mechanism_choices
                       if choice in mech_mod.mechanisms]

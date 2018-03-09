@@ -9,9 +9,9 @@ from puresasl import SASLError, SASLProtocolException, QOP
 
 try:
     import kerberos
-    _have_kerberos = True
+    have_kerberos = True
 except ImportError:
-    _have_kerberos = False
+    have_kerberos = False
 
 PY3 = sys.version_info[0] == 3
 if PY3:
@@ -532,7 +532,7 @@ class GSSAPIMechanism(Mechanism):
 
     def unwrap(self, incoming):
         if self.qop != QOP.AUTH:
-            incoming = base64.b64encode(incoming)
+            incoming = base64.b64encode(incoming).decode('ascii')
             kerberos.authGSSClientUnwrap(self.context, incoming)
             conf = kerberos.authGSSClientResponseConf(self.context)
             if 0 == conf and self.qop == QOP.AUTH_CONF:
@@ -553,5 +553,5 @@ mechanisms = dict((m.name, m) for m in (
     CramMD5Mechanism,
     DigestMD5Mechanism))
 
-if _have_kerberos:
+if have_kerberos:
     mechanisms[GSSAPIMechanism.name] = GSSAPIMechanism
