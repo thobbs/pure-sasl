@@ -1,3 +1,9 @@
+0.5.0
+=====
+March 8th, 2018
+
+* Added EXTERNAL mechanism
+
 0.4.1
 =====
 March 8th, 2018

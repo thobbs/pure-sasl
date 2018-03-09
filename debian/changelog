@@ -1,3 +1,9 @@
+pure-sasl (0.5.0) unstable; urgency=low
+
+  * Added EXTERNAL mechanism
+
+ -- Alex Shafer <ashafer01@gmail.com>  Thu, 08 Mar 2018 20:54:10 -0800
+
 pure-sasl (0.4.1) unstable; urgency=medium
 
   * Fix QOP checks in python3 (#19)
