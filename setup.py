@@ -21,6 +21,9 @@ provided.""",
       url='http://github.com/thobbs/pure-sasl',
       keywords='sasl',
       packages=['puresasl'],
+      extras_require={
+          'GSSAPI': ['kerberos>=1.3.0']
+      },
       classifiers=[
           'Development Status :: 4 - Beta',
           'Intended Audience :: Developers',
