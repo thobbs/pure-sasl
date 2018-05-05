@@ -216,7 +216,8 @@ class CramMD5Mechanism(PlainMechanism):
         self.password = None
 
 
-# functions used in DigestMD5 which were originally defined in the now-removed util module
+# functions used in DigestMD5 which were originally defined in the now-removed
+# util module
 
 def bytes(text):
     """
@@ -267,12 +268,10 @@ class DigestMD5Mechanism(Mechanism):
         self.username = username
         self.password = password
 
-        self._rspauth_okay = False
         self._digest_uri = None
         self._a1 = None
 
     def dispose(self):
-        self._rspauth_okay = None
         self._digest_uri = None
         self._a1 = None
 
@@ -318,29 +317,43 @@ class DigestMD5Mechanism(Mechanism):
             a2 += b':00000000000000000000000000000000'
             resp['maxbuf'] = b'16777215'  # 2**24-1
         resp['response'] = self.gen_hash(a2)
-        return b','.join([bytes(k) + b'=' + bytes(v) for k, v in resp.items()])
+        return b','.join(
+            [
+                bytes(k) + b'=' + bytes(v)
+                for k, v in resp.items()
+            ]
+        )
 
     @staticmethod
     def parse_challenge(challenge):
+        """Parse a digest challenge message.
+
+        :param ``bytes`` challenge:
+            Challenge message from the server, in bytes.
+        :returns:
+            ``dict`` of ``str`` keyword to ``bytes`` values.
+        """
         ret = {}
-        var = ''
-        val = ''
+        var = b''
+        val = b''
         in_var = True
         in_quotes = False
         new = False
         escaped = False
         for c in challenge:
+            if sys.version_info[0] == 3:
+                c = bytes([c])
             if in_var:
                 if c.isspace():
                     continue
-                if c == '=':
+                if c == b'=':
                     in_var = False
                     new = True
                 else:
                     var += c
             else:
                 if new:
-                    if c == '"':
+                    if c == b'"':
                         in_quotes = True
                     else:
                         val += c
@@ -350,23 +363,23 @@ class DigestMD5Mechanism(Mechanism):
                         escaped = False
                         val += c
                     else:
-                        if c == '\\':
+                        if c == b'\\':
                             escaped = True
-                        elif c == '"':
+                        elif c == b'"':
                             in_quotes = False
                         else:
                             val += c
                 else:
-                    if c == ',':
+                    if c == b',':
                         if var:
-                            ret[var] = bytes(val)
-                        var = ''
-                        val = ''
+                            ret[var.decode('ascii')] = val
+                        var = b''
+                        val = b''
                         in_var = True
                     else:
                         val += c
         if var:
-            ret[var] = val
+            ret[var.decode('ascii')] = val
         return ret
 
     def gen_hash(self, a2):
@@ -393,13 +406,12 @@ class DigestMD5Mechanism(Mechanism):
         response.update(rv)
         return bytes(response.hexdigest().lower())
 
-    # untested
     def authenticate_server(self, cmp_hash):
         a2 = b':' + self._digest_uri
         if self.qop != QOP.AUTH:
             a2 += b':00000000000000000000000000000000'
-        if self.gen_hash(a2) == cmp_hash:
-            self._rspauth_okay = True
+        if self.gen_hash(a2) != cmp_hash:
+            raise SASLProtocolException('Invalid server auth response')
 
     def process(self, challenge=None):
         if challenge is None:
@@ -411,28 +423,42 @@ class DigestMD5Mechanism(Mechanism):
                 return None
 
         challenge_dict = DigestMD5Mechanism.parse_challenge(challenge)
-        if self.sasl.mutual_auth and 'rspauth' in challenge_dict:
+        if 'rspauth' in challenge_dict:
             self.authenticate_server(challenge_dict['rspauth'])
+            self.complete = True
+            return None
 
         if 'realm' not in challenge_dict:
             self._fetch_properties('realm')
             challenge_dict['realm'] = self.realm
 
         for key in ('nonce', 'realm'):
+            # TODO: rfc2831#section-2.1.1 realm: "Multiple realm directives are
+            # allowed, in which case the user or client must choose one as the
+            # realm for which to supply to username and password"
+            # TODO: rfc2831#section-2.1.1 nonce: "This directive is required
+            # and MUST appear exactly once; if not present, or if multiple
+            # instances are present, the client should abort the authentication
+            # exchange"
             if key in challenge_dict:
                 setattr(self, key, challenge_dict[key])
 
         self.nc = 0
         if 'qop' in challenge_dict:
-            server_offered_qops = [x.strip() for x in challenge_dict['qop'].split(b',')]
+            server_offered_qops = [
+                x.strip() for x in challenge_dict['qop'].split(b',')
+            ]
         else:
-            server_offered_qops = ['auth']
+            server_offered_qops = [QOP.AUTH]
         self._pick_qop(set(server_offered_qops))
 
         if 'maxbuf' in challenge_dict:
             self.max_buffer = min(
                 self.sasl.max_buffer, int(challenge_dict['maxbuf']))
 
+        # TODO: rfc2831#section-2.1.1 algorithm: This directive is required and
+        # MUST appear exactly once; if not present, or if multiple instances
+        # are present, the client should abort the authentication exchange.
         return self.response()
 
 
