@@ -85,6 +85,7 @@ class PlainTextMechanismTest(_BaseMechanismTests):
         response = sasl.process(challenge)
         self.assertEqual(response, six.b('{0}\x00{1}\x00{2}'.format(auth_id, self.username, self.password)))
         self.assertIsInstance(response, six.binary_type)
+        self.assertTrue(self.sasl.complete)
 
     def test_wrap_unwrap(self):
         msg = 'msg'
@@ -195,6 +196,7 @@ class CramMD5MechanismTest(_BaseMechanismTests):
         self.assertIn(six.b(self.username), response)
         self.assertIn(six.b(hash.hexdigest()), response)
         self.assertIsInstance(response, six.binary_type)
+        self.assertTrue(self.sasl.complete)
 
     def test_wrap_unwrap(self):
         msg = 'msg'
@@ -224,6 +226,7 @@ class DigestMD5MechanismTest(_BaseMechanismTests):
             b'4-56,rc4,des,3des",maxbuf=65536,charset=utf-8,algorithm=md5-sess'
         )
         self.sasl.process(testChallenge)
+        self.assertTrue(self.sasl.complete)
 
     def test__pick_qop(self):
         # _pick_qop is called by process for DigestMD5

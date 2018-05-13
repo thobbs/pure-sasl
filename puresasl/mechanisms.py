@@ -210,6 +210,7 @@ class CramMD5Mechanism(PlainMechanism):
         self._fetch_properties('username', 'password')
         mac = hmac.HMAC(key=_b(self.password), digestmod=hashlib.md5)
         mac.update(challenge)
+        self.complete = True
         return b''.join((_b(self.username), b' ', _b(mac.hexdigest())))
 
     def dispose(self):
