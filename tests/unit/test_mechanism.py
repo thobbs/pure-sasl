@@ -219,9 +219,9 @@ class DigestMD5MechanismTest(_BaseMechanismTests):
 
     def test_process(self):
         testChallenge = (
-            'nonce="rmD6R8aMYVWH+/ih9HGBr3xNGAR6o2DUxpKlgDz6gUQ=",r'
-            'ealm="example.org",qop="auth,auth-int,auth-conf",cipher="rc4-40,rc'
-            '4-56,rc4,des,3des",maxbuf=65536,charset=utf-8,algorithm=md5-sess'
+            b'nonce="rmD6R8aMYVWH+/ih9HGBr3xNGAR6o2DUxpKlgDz6gUQ=",r'
+            b'ealm="example.org",qop="auth,auth-int,auth-conf",cipher="rc4-40,rc'
+            b'4-56,rc4,des,3des",maxbuf=65536,charset=utf-8,algorithm=md5-sess'
         )
         self.sasl.process(testChallenge)
 
