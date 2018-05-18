@@ -1,3 +1,10 @@
+pure-sasl (0.5.1) unstable; urgency=medium
+
+  * Fixes for DIGEST-MD5, server auth has been completed and is now tested
+  * Both DIGEST-MD5 and CRAM-MD5 properly set the complete flag now
+
+ -- Alex Shafer <ashafer01@gmail.com>  Fri, 18 May 2018 16:34:25 -0600
+
 pure-sasl (0.5.0) unstable; urgency=low
 
   * Added EXTERNAL mechanism

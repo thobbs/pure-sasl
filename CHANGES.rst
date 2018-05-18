@@ -1,3 +1,12 @@
+0.5.1
+=====
+May 18th, 2018
+
+* Fixes for DIGEST-MD5, server auth has been completed and is now tested
+* Both DIGEST-MD5 and CRAM-MD5 properly set the complete flag now
+
+Thanks to @ceache and @bjmb for this release
+
 0.5.0
 =====
 March 8th, 2018
