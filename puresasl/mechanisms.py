@@ -220,7 +220,7 @@ class CramMD5Mechanism(PlainMechanism):
 # functions used in DigestMD5 which were originally defined in the now-removed
 # util module
 
-def bytes(text):
+def to_bytes(text):
     """
     Convert Unicode text to UTF-8 encoded bytes.
 
@@ -252,7 +252,7 @@ def quote(text):
 
     :param text: A Unicode or byte string.
     """
-    text = bytes(text)
+    text = to_bytes(text)
     return b'"' + text.replace(b'\\', b'\\\\').replace(b'"', b'\\"') + b'"'
 
 
@@ -301,16 +301,16 @@ class DigestMD5Mechanism(Mechanism):
         if getattr(self, 'realm', None) is not None:
             resp['realm'] = quote(self.realm)
 
-        resp['username'] = quote(bytes(self.username))
+        resp['username'] = quote(to_bytes(self.username))
         resp['nonce'] = quote(self.nonce)
         if self.nc == 0:
-            self.cnonce = bytes('%s' % random.random())[2:]
+            self.cnonce = to_bytes('%s' % random.random())[2:]
         resp['cnonce'] = quote(self.cnonce)
         self.nc += 1
-        resp['nc'] = bytes('%08x' % self.nc)
+        resp['nc'] = to_bytes('%08x' % self.nc)
 
         self._digest_uri = (
-            bytes(self.sasl.service) + b'/' + bytes(self.sasl.host))
+                to_bytes(self.sasl.service) + b'/' + to_bytes(self.sasl.host))
         resp['digest-uri'] = quote(self._digest_uri)
 
         a2 = b'AUTHENTICATE:' + self._digest_uri
@@ -320,7 +320,7 @@ class DigestMD5Mechanism(Mechanism):
         resp['response'] = self.gen_hash(a2)
         return b','.join(
             [
-                bytes(k) + b'=' + bytes(v)
+                to_bytes(k) + b'=' + to_bytes(v)
                 for k, v in resp.items()
             ]
         )
@@ -343,7 +343,7 @@ class DigestMD5Mechanism(Mechanism):
         escaped = False
         for c in challenge:
             if sys.version_info[0] == 3:
-                c = bytes([c])
+                c = to_bytes([c])
             if in_var:
                 if c.isspace():
                     continue
@@ -386,9 +386,9 @@ class DigestMD5Mechanism(Mechanism):
     def gen_hash(self, a2):
         if not getattr(self, 'key_hash', None):
             key_hash = hashlib.md5()
-            user = bytes(self.username)
-            password = bytes(self.password)
-            realm = bytes(self.realm)
+            user = to_bytes(self.username)
+            password = to_bytes(self.password)
+            realm = to_bytes(self.realm)
             kh = user + b':' + realm + b':' + password
             key_hash.update(kh)
             self.key_hash = key_hash.digest()
@@ -398,14 +398,14 @@ class DigestMD5Mechanism(Mechanism):
         a1.update(a1h)
         response = hashlib.md5()
         self._a1 = a1.digest()
-        rv = bytes(a1.hexdigest().lower())
+        rv = to_bytes(a1.hexdigest().lower())
         rv += b':' + self.nonce
-        rv += b':' + bytes('%08x' % self.nc)
+        rv += b':' + to_bytes('%08x' % self.nc)
         rv += b':' + self.cnonce
         rv += b':' + self.qop
-        rv += b':' + bytes(hashlib.md5(a2).hexdigest().lower())
+        rv += b':' + to_bytes(hashlib.md5(a2).hexdigest().lower())
         response.update(rv)
-        return bytes(response.hexdigest().lower())
+        return to_bytes(response.hexdigest().lower())
 
     def authenticate_server(self, cmp_hash):
         a2 = b':' + self._digest_uri
