@@ -14,10 +14,14 @@ try:
 except ImportError:
     have_kerberos = False
 
-if platform.system() == 'Windows' :
-    import winkerberos as kerberos
-    kerberos.authGSSClientUserName = kerberos.authGSSClientUsername
-    have_kerberos = True
+if platform.system() == 'Windows':
+    try:
+        import winkerberos as kerberos
+        # Fix for different capitalisation in winkerberos method name
+        kerberos.authGSSClientUserName = kerberos.authGSSClientUsername
+        have_kerberos = True
+    except ImportError:
+        have_kerberos = False
 
 PY3 = sys.version_info[0] == 3
 if PY3:
