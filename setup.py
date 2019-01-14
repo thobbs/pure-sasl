@@ -22,7 +22,7 @@ provided.""",
       keywords='sasl',
       packages=['puresasl'],
       extras_require={
-          'GSSAPI': ['kerberos>=1.3.0']
+          'GSSAPI':  + ["winkerberos==0.7.0"] if "win" in sys.platform else ['kerberos>=1.3.0']
       },
       classifiers=[
           'Development Status :: 4 - Beta',

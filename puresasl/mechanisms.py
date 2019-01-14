@@ -4,6 +4,7 @@ import hmac
 import random
 import struct
 import sys
+import platform
 
 from puresasl import SASLError, SASLProtocolException, QOP
 
@@ -12,6 +13,11 @@ try:
     have_kerberos = True
 except ImportError:
     have_kerberos = False
+
+if platform.system() == 'Windows' :
+    import winkerberos as kerberos
+    kerberos.authGSSClientUserName = kerberos.authGSSClientUsername
+    have_kerberos = True
 
 PY3 = sys.version_info[0] == 3
 if PY3:
