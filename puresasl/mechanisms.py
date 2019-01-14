@@ -17,6 +17,7 @@ except ImportError:
 if platform.system() == 'Windows':
     try:
         import winkerberos as kerberos
+        # Fix for different capitalisation in winkerberos method name
         kerberos.authGSSClientUserName = kerberos.authGSSClientUsername
         have_kerberos = True
     except ImportError:
