@@ -7,9 +7,9 @@ import base64
 import hashlib
 import hmac
 import platform
-if platform.system() == 'Windows' :
+if platform.system() == 'Windows':
     import winkerberos as kerberos
-else :
+else:
     import kerberos
 
 from mock import patch
