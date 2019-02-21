@@ -1,3 +1,11 @@
+0.6.0
+=====
+February 21st, 2019
+
+* Add support for Windows via winkerberos (#30)
+
+Thanks to @ryan-pip for this release
+
 0.5.1
 =====
 May 18th, 2018

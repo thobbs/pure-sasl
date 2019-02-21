@@ -1,3 +1,9 @@
+pure-sasl (0.6.0) unstable; urgency=medium
+
+  * Add support for Window via winkerberos
+
+ -- Tyler Hobbs <tylerlhobbs@gmail.com>  Thu, 21 Feb 2019 14:13:39 -0600
+
 pure-sasl (0.5.1) unstable; urgency=medium
 
   * Fixes for DIGEST-MD5, server auth has been completed and is now tested
