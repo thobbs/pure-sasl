@@ -6,7 +6,11 @@ except ImportError:
 import base64
 import hashlib
 import hmac
-import kerberos
+import platform
+if platform.system() == 'Windows':
+    import winkerberos as kerberos
+else:
+    import kerberos
 
 from mock import patch
 import six
