@@ -3,6 +3,7 @@
 
 from setuptools import setup
 
+import platform
 import puresasl
 import sys
 
