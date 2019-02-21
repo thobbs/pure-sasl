@@ -1,3 +1,9 @@
+pure-sasl (0.6.1) unstable; urgency=medium
+
+  * Import platform in setup.py
+
+ -- Tyler Hobbs <tylerlhobbs@gmail.com>  Thu, 21 Feb 2019 15:50:20 -0600
+
 pure-sasl (0.6.0) unstable; urgency=medium
 
   * Add support for Window via winkerberos

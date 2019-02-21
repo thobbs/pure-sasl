@@ -1,3 +1,9 @@
+0.6.1
+=====
+February 21st, 2019
+
+* Import platform in setup.py
+
 0.6.0
 =====
 February 21st, 2019
