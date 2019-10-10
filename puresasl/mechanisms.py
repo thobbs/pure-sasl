@@ -562,7 +562,7 @@ class GSSAPIMechanism(Mechanism):
                 protect = 1
             else:
                 protect = 0
-            kerberos.authGSSClientWrap(self.context, outgoing, None, protect)
+            kerberos.authGSSClientWrap(self.context, outgoing.decode('utf8'), None, protect)
             return base64.b64decode(kerberos.authGSSClientResponse(self.context))
         else:
             return outgoing
