@@ -10,8 +10,6 @@ matrix:
   - python: 3.6
     env: TOXENV=pep8
 
-  - python: 2.6
-    env: TOXENV=py26,codecov
   - python: 2.7
     env: TOXENV=py27,codecov
   - python: 3.4
