@@ -1,3 +1,10 @@
+0.6.2
+=====
+October 14th, 2019
+
+* Fix GSSAPI wrapping using in Python 3 (#31)
+* Remove Python 2.6 from testing matrix
+
 0.6.1
 =====
 February 21st, 2019

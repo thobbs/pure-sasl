@@ -1,3 +1,10 @@
+pure-sasl (0.6.2) unstable; urgency=medium
+
+  * Fix GSSAPI wrap usage in Python 3
+  * Remove Python 2.6 from testing matrix
+
+ -- Tyler Hobbs <tylerlhobbs@gmail.com>  Mon, 14 Oct 2019 16:41:05 -0500
+
 pure-sasl (0.6.1) unstable; urgency=medium
 
   * Import platform in setup.py
