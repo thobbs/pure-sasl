@@ -563,11 +563,13 @@ class GSSAPIMechanism(Mechanism):
             else:
                 protect = 0
             kerberos.authGSSClientWrap(self.context, outgoing.decode('utf8'), None, protect)
-            return base64.b64decode(kerberos.authGSSClientResponse(self.context))
-        else:
-            return outgoing
+            outgoing = base64.b64decode(kerberos.authGSSClientResponse(self.context))
+        header = struct.pack('!I', len(outgoing))
+        return header + outgoing
 
     def unwrap(self, incoming):
+        incoming_len, = struct.unpack('!I', incoming[:4])
+        incoming = incoming[4:4+incoming_len]
         if self.qop != QOP.AUTH:
             incoming = base64.b64encode(incoming).decode('ascii')
             kerberos.authGSSClientUnwrap(self.context, incoming)
