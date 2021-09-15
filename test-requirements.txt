@@ -1,5 +1,5 @@
 coverage
-mock<=1.0.1
+mock
 nose
 six
 unittest2 ; python_version < '2.7'
