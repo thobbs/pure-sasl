@@ -24,7 +24,7 @@ provided.""",
       keywords='sasl',
       packages=['puresasl'],
       extras_require={
-          'GSSAPI':  ["winkerberos==0.7.0"] if platform.system() == 'Windows' else ['kerberos>=1.3.0']
+          'GSSAPI':  ["winkerberos>=0.7.0"] if platform.system() == 'Windows' else ['kerberos>=1.3.0']
       },
       classifiers=[
           'Development Status :: 4 - Beta',
