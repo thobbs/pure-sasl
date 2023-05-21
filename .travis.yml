@@ -26,6 +26,8 @@ matrix:
     env: TOXENV=py39,codecov
   - python: 3.10
     env: TOXENV=py310,codecov
+  - python: 3.11
+    env: TOXENV=py311,codecov
 
   # Failures on these unsupported python versions are allowed
   allow_failures:
