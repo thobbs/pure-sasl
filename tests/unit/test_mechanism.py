@@ -12,7 +12,11 @@ if platform.system() == 'Windows':
 else:
     import kerberos
 
-from mock import patch
+try:
+    from unittest.mock import patch
+except ImportError:
+    from mock import patch
+
 import six
 import struct
 
